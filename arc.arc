@@ -1,7 +1,5 @@
 ; Main Arc lib.  Ported to Scheme version Jul 06.
 
-; don't like names of conswhen and consif
-
 ; need better way of generating strings; too many calls to string
 ;  maybe strings with escape char for evaluation
 ; make foo~bar equiv of foo:~bar (in expand-ssyntax)
@@ -13,9 +11,6 @@
 ; warn when shadow a global name
 ; some simple regexp/parsing plan
 
-; compromises in this implementation:
-; no objs in code
-;  (mac testlit args (listtab args)) breaks when called
 ; separate string type
 ;  (= (cdr (cdr str)) "foo") couldn't work because no way to get str tail
 ;  not sure this is a mistake; strings may be subtly different from
@@ -48,19 +43,11 @@
 
 (def atom (x) (no (acons x)))
 
-; Can return to this def once Rtm gets ac to make all rest args
-; nil-terminated lists.
-
-; (def list args args)
-
-(def copylist (xs)
-  (if (no xs)
-      nil
-      (cons (car xs) (copylist (cdr xs)))))
-
-(def list args (copylist args))
+(def list args args)
 
 (def idfn (x) x)
+
+(def isnt (x y) (no (is x y)))
 
 ; Maybe later make this internal.  Useful to let xs be a fn?
 
@@ -82,21 +69,7 @@
                 `(do (sref sig ',parms ',name)
                      (safeset ,name (annotate 'mac (fn ,parms ,@body)))))))
 
-(mac and args
-  (if args
-      (if (cdr args)
-          `(if ,(car args) (and ,@(cdr args)))
-          (car args))
-      't))
-
-(def assoc (key al)
-  (if (atom al)
-       nil
-      (and (acons (car al)) (is (caar al) key))
-       (car al)
-      (assoc key (cdr al))))
-
-(def alref (al key) (cadr (assoc key al)))
+
 
 (mac with (parms . body)
   `((fn ,(map1 car (pair parms))
@@ -112,15 +85,52 @@
       `(let ,(car parms) ,(cadr parms)
          (withs ,(cddr parms) ,@body))))
 
-; Rtm prefers to overload + to do this
+(mac w/uniq (names . body)
+  (if (acons names)
+      `(with ,(apply + nil (map1 (fn (n) (list n '(uniq)))
+                             names))
+         ,@body)
+      `(let ,names (uniq) ,@body)))
 
-(def join args
+(mac or args
+  (if args
+    (w/uniq g
+      `(let ,g ,(car args)
+         (if ,g ,g (or ,@(cdr args)))))))
+
+(mac and args
+  (if args
+      (if (cdr args)
+          `(if ,(car args) (and ,@(cdr args)))
+          (car args))
+      't))
+
+; Destructuring means ambiguity: are pat vars bound in else? (no)
+
+(mac iflet (var expr then . rest)
+  (w/uniq gv
+    `(let ,gv ,expr
+       (if ,gv (let ,var ,gv ,then) ,@rest))))
+
+(mac whenlet (var expr . body)
+  `(iflet ,var ,expr (do ,@body)))
+
+(mac aif (expr . body)
+  `(let it ,expr
+     (if it
+         ,@(if (cddr body)
+               `(,(car body) (aif ,@(cdr body)))
+               body))))
+
+(mac awhen (expr . body)
+  `(let it ,expr (if it (do ,@body))))
+
+(mac aand args
   (if (no args)
-      nil
-      (let a (car args)
-        (if (no a)
-            (apply join (cdr args))
-            (cons (car a) (apply join (cdr a) (cdr args)))))))
+      't
+      (no (cdr args))
+       (car args)
+      `(let it ,(car args) (and it (aand ,@(cdr args))))))
 
 ; Need rfn for use in macro expansions.
 
@@ -131,6 +141,10 @@
 (mac afn (parms . body)
   `(let self nil
      (assign self (fn ,parms ,@body))))
+
+(def alist (x) (or (no x) (is (type x) 'cons)))
+
+
 
 ; Ac expands x:y:z into (compose x y z), ~x into (complement x)
 
@@ -152,29 +166,33 @@
   (let g (uniq)
     `(fn ,g (no (apply ,f ,g)))))
 
+
+
+; Rtm prefers to overload + to do this
+
+(def join args
+  (if (no args)
+      nil
+      (let a (car args)
+        (if (no a)
+            (apply join (cdr args))
+            (cons (car a) (apply join (cdr a) (cdr args)))))))
+
+(def assoc (key al)
+  (if (atom al)
+       nil
+      (and (acons (car al)) (is (caar al) key))
+       (car al)
+      (assoc key (cdr al))))
+
+(def alref (al key) (cadr (assoc key al)))
+
 (def rev (xs)
   ((afn (xs acc)
      (if (no xs)
          acc
          (self (cdr xs) (cons (car xs) acc))))
    xs nil))
-
-(def isnt (x y) (no (is x y)))
-
-(mac w/uniq (names . body)
-  (if (acons names)
-      `(with ,(apply + nil (map1 (fn (n) (list n '(uniq)))
-                             names))
-         ,@body)
-      `(let ,names (uniq) ,@body)))
-
-(mac or args
-  (and args
-       (w/uniq g
-         `(let ,g ,(car args)
-            (if ,g ,g (or ,@(cdr args)))))))
-
-(def alist (x) (or (no x) (is (type x) 'cons)))
 
 (mac in (x . choices)
   (w/uniq g
@@ -666,33 +684,6 @@
 
 (mac set args
   `(do ,@(map (fn (a) `(= ,a t)) args)))
-
-; Destructuring means ambiguity: are pat vars bound in else? (no)
-
-(mac iflet (var expr then . rest)
-  (w/uniq gv
-    `(let ,gv ,expr
-       (if ,gv (let ,var ,gv ,then) ,@rest))))
-
-(mac whenlet (var expr . body)
-  `(iflet ,var ,expr (do ,@body)))
-
-(mac aif (expr . body)
-  `(let it ,expr
-     (if it
-         ,@(if (cddr body)
-               `(,(car body) (aif ,@(cdr body)))
-               body))))
-
-(mac awhen (expr . body)
-  `(let it ,expr (if it (do ,@body))))
-
-(mac aand args
-  (if (no args)
-      't
-      (no (cdr args))
-       (car args)
-      `(let it ,(car args) (and it (aand ,@(cdr args))))))
 
 (mac accum (accfn . body)
   (w/uniq gacc
@@ -1377,11 +1368,6 @@
 
 (def only (f)
   (fn args (if (car args) (apply f args))))
-
-(mac conswhen (f x y)
-  (w/uniq (gf gx)
-   `(with (,gf ,f ,gx ,x)
-      (if (,gf ,gx) (cons ,gx ,y) ,y))))
 
 ; Could combine with firstn if put f arg last, default to (fn (x) t).
 
