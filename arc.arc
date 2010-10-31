@@ -564,7 +564,7 @@
   (let ex (afn (args)
             (if (no (cdr args))
                 (car args)
-                `(if (is ,var ',(car args))
+                `(if (iso ,var ',(car args))
                      ,(cadr args)
                      ,(self (cddr args)))))
     `(let ,var ,expr ,(ex args))))
@@ -1591,7 +1591,8 @@
 
 
 (= vtables* (table))
-(mac defgeneric (name args . body)
+(mac genericexpander(coerce-all coerce-back
+                     name args . body)
   (w/uniq (allargs basefn)
     `(do
       (let ,basefn (fn ,args ,@body)
@@ -1606,7 +1607,23 @@
       (def ,name ,allargs
         (aif (aand (vtables* ',name) (it (type:car ,allargs)))
           (apply it ,allargs)
-          (apply ,name (map [coerce _ 'cons] ,allargs)))))))
+          ,(with (car-coercer `(apply ,name (coerce (car ,allargs) 'cons) (cdr ,allargs))
+                  all-coercer `(apply ,name (map [coerce _ 'cons] ,allargs)))
+             (case (list coerce-all coerce-back)
+               (nil nil)  car-coercer
+               (t nil)  all-coercer
+               (nil t)    `(coerce ,car-coercer (type (car ,allargs)))
+               (t t)  `(coerce ,all-coercer (type (car ,allargs))))))))))
+
+(mac defgeneric (name args . body)
+  `(genericexpander nil nil ,name ,args ,@body))
+(mac defgeneric* (name args . body)
+  `(genericexpander t nil ,name ,args ,@body))
+
+(mac deftransform (name args . body)
+  `(genericexpander nil t ,name ,args ,@body))
+(mac deftransform* (name args . body)
+  `(genericexpander t t ,name ,args ,@body))
 
 (mac defmethod (name args type . body)
   `(= ((vtables* ',name) ',type)
@@ -1614,7 +1631,7 @@
         ,@body)))
 
 ; Could take n args, but have never once needed that.
-(defgeneric iso (x y)
+(defgeneric* iso (x y)
   (or (is x y)
       (and (acons x)
            (acons y)
