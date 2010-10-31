@@ -199,8 +199,6 @@
     `(let ,g ,x
        (or ,@(map1 (fn (c) `(is ,g ,c)) choices)))))
 
-; Could take n args, but have never once needed that.
-
 ; bootstrapping version; overloaded later as a generic function
 (def iso (x y)
   (or (is x y)
@@ -1593,36 +1591,35 @@
 
 
 (= vtables* (table))
-(mac defgeneric(name args . body)
-  `(do
-    (or= (vtables* ',name) (table))
-    (def ,name allargs
-      (aif (aand (vtables* ',name) (it (type car.allargs)))
-        (apply it allargs)
-        (aif (pickles* (type car.allargs))
-          (apply ,name (map it allargs))
-          (let ,args allargs
-            ,@body))))))
+(mac defgeneric (name args . body)
+  (w/uniq (allargs basefn)
+    `(do
+      (let ,basefn (fn ,args ,@body)
+        (= (vtables* ',name)
+           ; Assume body handles primitives by default. Can be overridden.
+           (obj () ,basefn
+                sym ,basefn
+                char ,basefn
+                int ,basefn
+                num ,basefn
+                cons ,basefn)))
+      (def ,name ,allargs
+        (aif (aand (vtables* ',name) (it (type:car ,allargs)))
+          (apply it ,allargs)
+          (apply ,name (map [coerce _ 'cons] ,allargs)))))))
 
-(mac defmethod(name args type . body)
+(mac defmethod (name args type . body)
   `(= ((vtables* ',name) ',type)
       (fn ,args
         ,@body)))
 
-(= pickles* (table))
-(mac pickle(type f)
-  `(= (pickles* ',type)
-      ,f))
-
 ; Could take n args, but have never once needed that.
 (defgeneric iso (x y)
-  (is x y))
-
-(defmethod iso (x y) cons
-  (and (acons x)
-       (acons y)
-       (iso car.x car.y)
-       (iso cdr.x cdr.y)))
+  (or (is x y)
+      (and (acons x)
+           (acons y)
+           (iso car.x car.y)
+           (iso cdr.x cdr.y))))
 
 (defmethod iso (x y) table
   (and (isa x 'table)
@@ -1669,6 +1666,9 @@
 
 (defcoerce table cons (al)
   (listtab al))
+
+(defcoerce cons queue (q)
+  (qlist q))
 
 (= hooks* (table))
 
