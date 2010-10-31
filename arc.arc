@@ -201,6 +201,7 @@
 
 ; Could take n args, but have never once needed that.
 
+; bootstrapping version; overloaded later as a generic function
 (def iso (x y)
   (or (is x y)
       (and (acons x)
@@ -1457,29 +1458,31 @@
     (writec #\newline))
   (car args))
 
-(def queue () (list nil nil 0))
+(def queue () (annotate 'queue (list nil nil 0)))
 
 ; Despite call to atomic, once had some sign this wasn't thread-safe.
 ; Keep an eye on it.
 
-(def enq (obj q)
-  (atomic
-    (++ (q 2))
-    (if (no (car q))
-        (= (cadr q) (= (car q) (list obj)))
-        (= (cdr (cadr q)) (list obj)
-           (cadr q)       (cdr (cadr q))))
-    (car q)))
+(def enq (obj qq)
+  (let q rep.qq
+    (atomic
+      (++ q.2)
+      (if (no q.0)
+        (= q.1 (= q.0 list.obj))
+        (= (cdr q.1)  list.obj
+           q.1        (cdr q.1)))
+      q.0)))
 
-(def deq (q)
-  (atomic (unless (is (q 2) 0) (-- (q 2)))
-          (pop (car q))))
+(def deq (qq)
+  (let q rep.qq
+    (atomic (unless (is 0 q.2) (-- q.2))
+            (pop q.0))))
 
 ; Should redef len to do this, and make queues lists annotated queue.
 
-(def qlen (q) (q 2))
+(def qlen (q) (rep.q 2))
 
-(def qlist (q) (car q))
+(def qlist (q) (car rep.q))
 
 (def enq-limit (val q (o limit 1000))
   (atomic
@@ -1588,6 +1591,59 @@
        (or ,val (,setter ,expr)))))
 
 
+
+(= vtables* (table))
+(mac defgeneric(name args . body)
+  `(do
+    (or= (vtables* ',name) (table))
+    (def ,name allargs
+      (aif (aand (vtables* ',name) (it (type car.allargs)))
+        (apply it allargs)
+        (aif (pickles* (type car.allargs))
+          (apply ,name (map it allargs))
+          (let ,args allargs
+            ,@body))))))
+
+(mac defmethod(name args type . body)
+  `(= ((vtables* ',name) ',type)
+      (fn ,args
+        ,@body)))
+
+(= pickles* (table))
+(mac pickle(type f)
+  `(= (pickles* ',type)
+      ,f))
+
+; Could take n args, but have never once needed that.
+(defgeneric iso (x y)
+  (is x y))
+
+(defmethod iso (x y) cons
+  (and (acons x)
+       (acons y)
+       (iso car.x car.y)
+       (iso cdr.x cdr.y)))
+
+(defmethod iso (x y) table
+  (and (isa x 'table)
+       (isa y 'table)
+       (is (len keys.x) (len keys.y))
+       (all
+         (fn((k v))
+           (iso y.k v))
+         tablist.x)))
+
+(defgeneric len (x)
+  ($.length x))
+
+(defmethod len (x) string
+  ($.string-length x))
+
+(defmethod len (x) table
+  ($.hash-table-count x))
+
+(defmethod len (x) queue
+  (qlen x))
 
 ; User-definable calling for given types via coerce* extension
 (def set-coercer (to from fun)
