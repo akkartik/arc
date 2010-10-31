@@ -105,3 +105,71 @@
              (enq 3 q)
              (len q))
   :should be 3)
+
+(test-ac "some 1 - string"
+  :valueof (some "a@b" (testify #\@))
+  :should be 't)
+
+(test-ac "some 2"
+  :valueof (some "abc" (testify #\@))
+  :should be ())
+
+(test-ac "some 3 - list"
+  :valueof (some '(1 2 3) (testify 1))
+  :should be 't)
+
+(test-ac "some 4"
+  :valueof (some '(1 2 3) (testify 4))
+  :should be ())
+
+(test-ac "find 1 - string"
+  :valueof (find #\@ "a@b")
+  :should be #\@)
+
+(test-ac "find 2"
+  :valueof (find #\@ "abc")
+  :should be ())
+
+(test-ac "find 3 - list"
+  :valueof (find #\@ '(#\@))
+  :should be #\@)
+
+(test-ac "find 4"
+  :valueof (find #\@ '(1 2))
+  :should be ())
+
+(test-ac "find 5"
+  :valueof (find odd '(1 2))
+  :should be 1)
+
+(test-ac "all 1"
+  :valueof (all odd '(1 3 5))
+  :should be 't)
+
+(test-ac "all 2"
+  :valueof (all odd '(1 2 3))
+  :should be ())
+
+(test-ac "all 3 - testify works"
+  :valueof (all 1 '(1 1 1))
+  :should be 't)
+
+(test-ac "all 4 - empty list"
+  :valueof (all 1 '())
+  :should be 't)
+
+(test-ac "all 5 - empty string"
+  :valueof (all 1 "")
+  :should be 't)
+
+(test-ac "rem 1"
+  :valueof (rem odd '(1 2 3 4))
+  :should be '(2 4))
+
+(test-ac "rem 2 - string"
+  :valueof (rem #\@ "a@b")
+  :should be "ab")
+
+(test-ac "keep 1 - string"
+  :valueof (keep #\@ "a@b")
+  :should be "@")

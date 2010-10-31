@@ -11,6 +11,7 @@
 ; warn when shadow a global name
 ; some simple regexp/parsing plan
 
+; experimental: no testify in keep and some
 ; separate string type
 ;  (= (cdr (cdr str)) "foo") couldn't work because no way to get str tail
 ;  not sure this is a mistake; strings may be subtly different from
@@ -215,7 +216,7 @@
   `(caselet ,(uniq) ,expr ,@args))
 
 ; bootstrapping version; overloaded later as a generic function
-(def some (f seq)
+(def some (seq f)
   (reclist f:car seq))
 
 
@@ -234,7 +235,7 @@
 
 
 (def map (f . seqs)
-  (if (some [isa _ 'string] seqs)
+  (if (some seqs [isa _ 'string])
        (withs (n   (apply min (map len seqs))
                new (newstring n))
          ((afn (i)
@@ -246,7 +247,7 @@
       (no (cdr seqs))
        (map1 f (car seqs))
       ((afn (seqs)
-        (if (some no seqs)
+        (if (some seqs no)
             nil
             (cons (apply f (map1 car seqs))
                   (self (map1 cdr seqs)))))
@@ -504,17 +505,13 @@
 (def testify (x)
   (if (isa x 'fn) x [is _ x]))
 
-; Like keep, seems like some shouldn't testify.  But find should,
-; and all probably should.
-
-(def some (test seq)
-  (let f (testify test)
-    (if (alist seq)
-        (reclist f:car seq)
-        (recstring f:seq seq))))
+(def some (seq f)
+  (if (alist seq)
+      (reclist f:car seq)
+      (recstring f:seq seq)))
 
 (def all (test seq)
-  (~some (complement (testify test)) seq))
+  (~some seq ~testify.test))
 
 (def mem (test seq)
   (let f (testify test)
@@ -662,7 +659,7 @@
               (,setter (cdr ,g)))))))
 
 (def adjoin (x xs (o test iso))
-  (if (some [test x _] xs)
+  (if (some xs [test x _])
       xs
       (cons x xs)))
 
@@ -708,7 +705,7 @@
   (with (gop    (uniq)
          gargs  (map [uniq] args)
          mix    (afn seqs
-                  (if (some no seqs)
+                  (if (some seqs no)
                       nil
                       (+ (map car seqs)
                          (apply self (map cdr seqs))))))
@@ -1267,7 +1264,7 @@
   `(time (repeat 10 ,expr)))
 
 (def union (f xs ys)
-  (+ xs (rem (fn (y) (some [f _ y] xs))
+  (+ xs (rem (fn (y) (some xs [f _ y]))
              ys)))
 
 (= templates* (table))
