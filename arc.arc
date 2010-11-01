@@ -191,7 +191,9 @@
 
 ; bootstrapping version; overloaded later as a generic function
 (def reclist (f xs)
-  (and xs (or f.xs (reclist f cdr.xs))))
+  (and xs
+       (or (f xs)
+           (reclist f cdr.xs))))
 
 (mac in (x . choices)
   (w/uniq g
@@ -452,8 +454,8 @@
              (case (list coerce-all coerce-back)
                (nil nil)  last-coercer
                (t nil)  all-coercer
-               (nil t)    `(coerce ,last-coercer (type (car ,allargs)))
-               (t t)  `(coerce ,all-coercer (type (car ,allargs))))))))))
+               (nil t)    `(coerce ,last-coercer (type (last ,allargs)))
+               (t t)  `(coerce ,all-coercer (type (last ,allargs))))))))))
 
 (mac defgeneric (name args . body)
   `(genericexpander nil nil ,name ,args ,@body))
@@ -741,7 +743,9 @@
   (is len.seq 0))
 
 (defgeneric reclist (f xs)
-  (and xs (or f.xs (reclist f cdr.xs))))
+  (and xs
+       (or (f xs)
+           (reclist f cdr.xs))))
 
 (def testify (x)
   (if (isa x 'fn) x [is _ x]))
@@ -763,14 +767,10 @@
               (self (+ i 1)))))
    start))
 
-(def keep (f seq)
-  (if (alist seq)
-    ((afn (s)
-      (if (no s)        nil
-          (f (car s))   (cons (car s) (self (cdr s)))
-                        (self (cdr s))))
-     seq)
-    (coerce (keep f (coerce seq 'cons)) 'string)))
+(deftransform keep (f seq)
+  (if (no seq)      nil
+      (f car.seq)   (cons car.seq (keep f cdr.seq))
+                    (keep f cdr.seq)))
 
 (def rem (test seq)
   (keep ~testify.test seq))
