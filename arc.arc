@@ -1518,8 +1518,6 @@
     (atomic (unless (is 0 q.2) (-- q.2))
             (pop q.0))))
 
-; Should redef len to do this, and make queues lists annotated queue.
-
 (def qlen (q) (rep.q 2))
 
 (def qlist (q) (car rep.q))

@@ -636,11 +636,11 @@
 
 ; turn the arguments to Arc apply into a list.
 ; if you call (apply fn 1 2 '(3 4))
-; then args is '(1 2 (3 4 . nil) . ())
+; then args is '(1 2 (3 4))
 ; that is, the main list is a scheme list.
-; and we should return '(1 2 3 4 . ())
-; was once (apply apply list (ac-denil args))
-; but that didn't work for (apply fn nil)
+; and we should return '(1 2 3 4)
+; was once (apply apply list args)
+; but that didn't work for (apply fn ())
 
 (define (ar-apply-args args)
   (cond ((null? args) ())
@@ -1300,13 +1300,13 @@
                            (ar-apply f ())
                            (begin
                              (thread-cell-set! ar-sema-cell #t)
-			     (protect
-			      (lambda ()
-				(call-with-semaphore
-				 ar-the-sema
-				 (lambda () (ar-apply f ()))))
-			      (lambda ()
-				(thread-cell-set! ar-sema-cell #f)))))))
+                             (protect
+                              (lambda ()
+                                (call-with-semaphore
+                                 ar-the-sema
+                                 (lambda () (ar-apply f ()))))
+                              (lambda ()
+                                (thread-cell-set! ar-sema-cell #f)))))))
 
 (xdef dead (lambda (x) (tnil (thread-dead? x))))
 
