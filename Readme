@@ -8,6 +8,11 @@ http://awwx.ws/implicit
 Bugfixes (http://arclanguage.org/item?id=10830, each on tables returns nil)
 Case can work on lists and other compounds
 
+srv:
+  parse IP from X-Forwarded-For
+  allow nested paths to be accessed inside arc/static
+  more mime-types, more html attributes, more useful logging
+
 Generic functions that read from vtables* and dispatch on the type of the _last_ arg.
 There are 4 refinements regarding what to do when there's no entry in vtables*
   defgeneric: coerce last arg to cons

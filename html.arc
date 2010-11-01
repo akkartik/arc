@@ -82,9 +82,6 @@
 
 (attribute a          href           opstring)
 (attribute a          rel            opstring)
-(attribute a          class          opstring)
-(attribute a          id             opsym)
-(attribute a          onclick        opstring)
 (attribute body       alink          opcolor)
 (attribute body       bgcolor        opcolor)
 (attribute body       leftmargin     opnum)
@@ -98,6 +95,7 @@
 (attribute font       size           opnum)
 (attribute form       action         opstring)
 (attribute form       method         opsym)
+(attribute form       onsubmit       opstring)
 (attribute img        align          opsym)
 (attribute img        border         opnum)
 (attribute img        height         opnum)
@@ -106,12 +104,17 @@
 (attribute img        hspace         opnum)
 (attribute img        src            opstring)
 (attribute input      name           opstring)
+(attribute input      src            opstring)
+(attribute input      align          opsym)
 (attribute input      size           opnum)
 (attribute input      type           opsym)
 (attribute input      value          opesc)
 (attribute input      checked        opcheck)
+(attribute label      for            opstring)
 (attribute select     name           opstring)
+(attribute select     onchange       opstring)
 (attribute option     selected       opsel)
+(attribute option     value          opstring)
 (attribute table      bgcolor        opcolor)
 (attribute table      border         opnum)
 (attribute table      cellpadding    opnum)
@@ -126,12 +129,9 @@
 (attribute td         colspan        opnum)
 (attribute td         width          opnum)
 (attribute td         valign         opsym)
-(attribute td         class          opstring)
 (attribute tr         bgcolor        opcolor)
 (attribute hr         color          opcolor)
-(attribute span       class          opstring)
 (attribute span       align          opstring)
-(attribute span       id             opsym)
 (attribute rss        version        opstring)
 
 
@@ -178,7 +178,10 @@
   (if (no options)
       '()
       (let ((opt val) . rest) options
-        (let meth (if (is opt 'style) opstring (opmeth spec opt))
+        (let meth (if (pos opt '(style class id title target onclick
+                                       onmouseover onmouseout onfocus onblur))
+                    opstring
+                    (opmeth spec opt))
           (if meth
               (if val
                   (cons (if (precomputable-tagopt val)

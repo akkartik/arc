@@ -26,6 +26,9 @@
 
 (= srv-noisy* nil)
 
+(mac wrapper(var . body)
+  `(fn params (if params (do ,@body) ,var)))
+
 ; http requests currently capped at 2 meg by socket-accept
 
 ; should threads process requests one at a time? no, then
@@ -45,23 +48,21 @@
       (errsafe (handle-request-1 s))))
 
 (def handle-request-1 (s)
-  (let (i o ip) (socket-accept s)
-    (if (and (or (ignore-ips* ip) (abusive-ip ip))
-             (++ (spurned* ip 0)))
-        (force-close i o)
-        (do (++ requests*)
-            (++ (requests/ip* ip 0))
-            (with (th1 nil th2 nil)
-              (= th1 (thread
-                       (after (handle-request-thread i o ip)
-                              (close i o)
-                              (kill-thread th2))))
-              (= th2 (thread
-                       (sleep threadlife*)
-                       (unless (dead th1)
-                         (prn "srv thread took too long for " ip))
-                       (break-thread th1)
-                       (force-close i o))))))))
+  (++ requests*)
+  (withs ((i o ip)    (socket-accept s)
+          ip-wrapper  (wrapper ip (= ip car.params))
+          th1         nil
+          th2         nil)
+    (= th1 (thread
+             (after (handle-request-thread i o ip-wrapper)
+                    (close i o)
+                    (if th2 (kill-thread th2)))))
+    (= th2 (thread
+             (sleep threadlife*)
+             (unless (and th1 (dead th1))
+               (prn "srv thread took too long for " ip))
+             (if th1 (kill-thread th1))
+             (force-close i o)))))
 
 ; Returns true if ip has made req-limit* requests in less than
 ; req-window* seconds.  If an ip is throttled, only 1 request is
@@ -74,8 +75,19 @@
 
 (= req-times* (table) req-limit* 30 req-window* 10 dos-window* 2)
 
+(wipe show-abuse*)
 (def abusive-ip (ip)
+  (++ (requests/ip* ip 0))
+  (if show-abuse*
+    (if (ignore-ips* ip)
+      (prn ip " ignored")
+      (prn ip " " (if (abusive-ip-core ip) "" "not ") "abusive (" requests/ip*.ip ")")))
+  (and (or (ignore-ips* ip) (abusive-ip-core ip))
+       (++ (spurned* ip 0))))
+
+(def abusive-ip-core (ip)
   (and (only.> (requests/ip* ip) 250)
+       (~is ip "127.0.0.1")
        (let now (seconds)
          (do1 (if (req-times* ip)
                   (and (>= (qlen (req-times* ip))
@@ -87,21 +99,25 @@
                       nil))
               (enq now (req-times* ip))))))
 
-(def handle-request-thread (i o ip)
+(let proxy-header "X-Forwarded-For: "
+  (def strip-header(s)
+    (subst "" proxy-header s))
+  (def proxy-ip(ip-wrapper lines)
+    (aif (only.strip-header (car:keep [headmatch proxy-header _] lines))
+        (ip-wrapper it)
+        (ip-wrapper))))
+
+(wipe show-requests*)
+(def handle-request-thread (i o ip-wrapper)
   (with (nls 0 lines nil line nil responded nil t0 (msec))
     (after
       (whilet c (unless responded (readc i))
         (if srv-noisy* (pr c))
         (if (is c #\newline)
             (if (is (++ nls) 2)
-                (let (type op args n cooks) (parseheader (rev lines))
-                  (let t1 (msec)
-                    (case type
-                      get  (respond o op args cooks ip)
-                      post (handle-post i o op args n cooks ip)
-                           (respond-err o "Unknown request: " (car lines)))
-                    (log-request type op args cooks ip t0 t1)
-                    (set responded)))
+                (do
+                  (handle-request-2 lines i o ip-wrapper t0)
+                  (set responded))
                 (do (push (string (rev line)) lines)
                     (wipe line)))
             (unless (is c #\return)
@@ -109,6 +125,21 @@
               (= nls 0))))
       (close i o)))
   (harvest-fnids))
+
+(def handle-request-2(lines i o ip-wrapper t0)
+  (let (type op args n cooks) (parseheader (rev lines))
+    (if show-requests* (prn lines))
+    (unless (abusive-ip (proxy-ip ip-wrapper lines))
+      (handle-request-3 type i o op args n cooks (ip-wrapper) t0))))
+
+(def handle-request-3 (type i o op args n cooks ip t0)
+  (let t1 (msec)
+    (let arg-wrapper (wrapper args (zap [+ _ car.params] args))
+      (case type
+        get  (respond o op args cooks ip)
+        post (handle-post i o op arg-wrapper n cooks ip)
+             (respond-err o "Unknown request: " ip " " type)))
+    (log-request type op args cooks ip t0 t1)))
 
 (def log-request (type op args cooks ip t0 t1)
   (with (parsetime (- t1 t0) respondtime (- (msec) t1))
@@ -118,14 +149,13 @@
                  (if (> (+ parsetime respondtime) 1000) "***" "")
                  type
                  op
-                 (let arg1 (car args)
-                   (if (caris arg1 "fnid") "" arg1))
+                 args
                  cooks)))
 
 ; Could ignore return chars (which come from textarea fields) here by
 ; (unless (is c #\return) (push c line))
 
-(def handle-post (i o op args n cooks ip)
+(def handle-post (i o op arg-wrapper n cooks ip)
   (if srv-noisy* (pr "Post Contents: "))
   (if (no n)
       (respond-err o "Post request without Content-Length.")
@@ -135,7 +165,8 @@
           (-- n)
           (push c line))
         (if srv-noisy* (pr "\n\n"))
-        (respond o op (+ (parseargs (string (rev line))) args) cooks ip))))
+        (arg-wrapper (parseargs (string (rev line))))
+        (respond o op (arg-wrapper) cooks ip))))
 
 (= header* "HTTP/1.1 200 OK
 Content-Type: text/html; charset=utf-8
@@ -154,6 +185,10 @@ Connection: close"))
      '((gif       "image/gif")
        (jpg       "image/jpeg")
        (png       "image/png")
+       (ico       "image/x-icon")
+       (swf       "application/x-shockwave-flash")
+       (text/css  "text/css")
+       (text/javascript "text/javascript")
        (text/html "text/html; charset=utf-8")))
 
 (= rdheader* "HTTP/1.0 302 Moved")
@@ -203,7 +238,7 @@ Connection: close"))
   cooks nil
   ip    nil)
 
-(= unknown-msg* "Unknown." max-age* (table) static-max-age* nil)
+(= unknown-msg* "Unknown." max-age* (table) static-max-age* 3600)
 
 (def respond (str op args cooks ip)
   (w/stdout str
@@ -217,31 +252,36 @@ Connection: close"))
                      (awhen (max-age* op)
                        (prn "Cache-Control: max-age=" it))
                      (f str req))))
-           (let filetype (static-filetype op)
-             (aif (and filetype (file-exists (string staticdir* op)))
-                  (do (prn (type-header* filetype))
-                      (awhen static-max-age*
-                        (prn "Cache-Control: max-age=" it))
-                      (prn)
-                      (w/infile i it
-                        (whilet b (readb i)
-                          (writeb b str))))
-                  (respond-err str unknown-msg*))))))
+           (when (secure? op)
+             (let filetype (static-filetype op)
+               (aif (and filetype (file-exists (string staticdir* op)))
+                    (do (prn (type-header* filetype))
+                        (awhen static-max-age*
+                          (prn "Cache-Control: max-age=" it))
+                        (prn)
+                        (w/infile i it
+                          (whilet b (readb i)
+                            (writeb b str))))
+                    (respond-err str unknown-msg*)))))))
+
+(def secure? (sym)
+  (~posmatch ".." string.sym))
 
 (def static-filetype (sym)
-  (let fname (coerce sym 'string)
-    (and (~find #\/ fname)
-         (case (downcase (last (check (tokens fname #\.) ~single)))
-           "gif"  'gif
-           "jpg"  'jpg
-           "jpeg" 'jpg
-           "png"  'png
-           "css"  'text/html
-           "txt"  'text/html
-           "htm"  'text/html
-           "html" 'text/html
-           "arc"  'text/html
-           ))))
+  (case (downcase (last (check (tokens string.sym #\.) ~single)))
+    "gif"  'gif
+    "jpg"  'jpg
+    "jpeg" 'jpg
+    "png"  'png
+    "ico"  'ico
+    "swf"  'swf
+    "css"  'text/css
+    "js"   'text/javascript
+    "txt"  'text/html
+    "htm"  'text/html
+    "html" 'text/html
+    "arc"  'text/html
+    ))
 
 (def respond-err (str msg . args)
   (w/stdout str
@@ -285,7 +325,7 @@ Connection: close"))
   (map [tokens _ #\=]
        (cdr (tokens s [or (whitec _) (is _ #\;)]))))
 
-(def arg (req key) (alref req!args key))
+(def arg (req key) (alref req!args string.key))
 
 ; *** Warning: does not currently urlencode args, so if need to do
 ; that replace v with (urlencode v).
@@ -497,7 +537,7 @@ Connection: close"))
 
 (def srvlog (type . args)
   (w/appendfile o (logfile-name type)
-    (w/stdout o (atomic (apply prs (seconds) args) (prn)))))
+    (w/stdout o (atomic (write (cons (seconds) args)) (prn)))))
 
 (def logfile-name (type)
   (string logdir* type "-" (memodate)))
