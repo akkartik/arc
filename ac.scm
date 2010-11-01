@@ -9,12 +9,29 @@
 (require (lib "foreign.ss"))
 (unsafe!)
 
+(define (ac-global-name s)
+  (string->symbol (string-append "_" (symbol->string s))))
+
+(define-syntax defarc
+  (syntax-rules ()
+    ((defarc (name . args) body ...)
+     (defarc name (name . args) body ...))
+    ((defarc arc-name (scheme-name . args) body ...)
+     (begin
+       (xdef arc-name (lambda args body ...))
+       (defarc arc-name scheme-name)))
+    ((defarc arc-name scheme-name)
+     (define (scheme-name . args)
+       (apply (namespace-variable-value (ac-global-name 'arc-name)) args)))
+    ((defarc name)
+     (defarc name name))))
+
 ; compile an Arc expression into a Scheme expression,
 ; both represented as s-expressions.
 ; env is a list of lexically bound variables, which we
 ; need in order to decide whether set should create a global.
 
-(define (ac s env)
+(defarc (ac s env)
   (cond ((string? s) (ac-string s env))
         ((literal? s) s)
         ((eqv? s 'nil) ())
@@ -210,13 +227,13 @@
                  acc
                  keepsep?))))
 
-(define (ac-global-name s)
-  (string->symbol (string-append "_" (symbol->string s))))
+(defarc (ac-defined-var? s)
+  #f)
 
 (define (ac-var-ref s env)
-  (if (lex? s env)
-      s
-      (ac-global-name s)))
+  (cond ((lex? s env)        s)
+        ((ac-defined-var? s) (list (ac-global-name s)))
+        (#t                  (ac-global-name s))))
 
 ; lowering into mzscheme, with (unquote <foo>) lifting us back into arc
 
@@ -406,6 +423,7 @@
         (list 'let `((zz ,b))
                (cond ((eqv? a 't) (err "Can't rebind t"))
                      ((lex? a env) `(set! ,a zz))
+                     ((ac-defined-var? a) `(,(ac-global-name a) zz))
                      (#t `(namespace-set-variable-value! ',(ac-global-name a)
                                                          zz)))
                'zz))

@@ -1519,7 +1519,6 @@
             (pop q.0))))
 
 (def qlen (q) (rep.q 2))
-
 (def qlist (q) (car rep.q))
 
 (def enq-limit (val q (o limit 1000))
@@ -1734,6 +1733,47 @@
       0
       (/ (count test xs) (len xs))))
 
+
+
+(= scheme-f (read "#f"))
+(= scheme-t (read "#t"))
+
+(= ac-global-name $.ac-global-name)
+
+(mac ac-set-global (name val)
+  (w/uniq (gname v)
+    `(with (,gname (ac-global-name ,name)
+            ,v ,val)
+       ($:namespace-set-variable-value! ,gname ,v)
+       nil)))
+
+(= defined-variables* (table))
+(def ac-defined-var?(name)
+  (if defined-variables*.name scheme-t scheme-f))
+
+(mac defvar (name impl)
+  `(do (ac-set-global ',name ,impl)
+       (set (defined-variables* ',name))
+       nil))
+
+(mac defvar-impl (name)
+  (let gname (ac-global-name name)
+    `($ ,gname)))
+
+(mac undefvar (name)
+  `(do (wipe (defined-variables* ',name))
+       (ac-set-global ',name nil)))
+
+(mac implicit (name (o val))
+  `(do (defvar ,name ($.make-parameter ,val))
+       (mac ,(sym (string "w/" name)) (v . body)
+         (w/uniq (param gv gf)
+           `(with (,param (defvar-impl ,',name)
+                   ,gv ,v
+                   ,gf (fn () ,@body))
+              ($ (parameterize ((,param ,gv)) (,gf))))))))
+
+
 
 ; any logical reason I can't say (push x (if foo y z)) ?
 ;   eval would have to always ret 2 things, the val and where it came from

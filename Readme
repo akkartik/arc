@@ -1,7 +1,10 @@
 Patches welcome! If you have tools you use frequently, send them to arc@akkartik.com
 
 - Features so far
+$ for escaping to scheme
 Extensible coerce (rntz; http://arclanguage.org/item?id=9828)
+http://awwx.ws/defarc
+http://awwx.ws/implicit
 Bugfixes (http://arclanguage.org/item?id=10830, each on tables returns nil)
 Case can work on lists and other compounds
 

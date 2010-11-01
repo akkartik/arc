@@ -173,3 +173,9 @@
 (test-ac "keep 1 - string"
   :valueof (keep (testify #\@) "a@b")
   :should be "@")
+
+(arc-eval '(implicit implicit0 10))
+(arc-eval '(def g() ++.implicit0)) ; fails if this is in a do block with the implicit decl. Bug?
+(test-ac "implicit"
+  :valueof (list (w/implicit0 20 (g) implicit0) implicit0)
+  :should be '(21 10))
