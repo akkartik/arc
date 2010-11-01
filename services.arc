@@ -17,3 +17,13 @@
 (= remainder $.remainder)
 (= ceiling $.ceiling)
 (= floor $.floor)
+(= trunc [$:inexact->exact (truncate _)])
+(= exact [$:tnil (exint? _)])
+
+(= newstring $.make-string)
+
+(= memory $.current-memory-use)
+(= seconds $.current-seconds)
+(= msec $.current-milliseconds)
+(= current-process-milliseconds $.current-process-milliseconds)
+(= current-gc-milliseconds $.current-gc-milliseconds)

@@ -1178,6 +1178,8 @@
 (xdef details (lambda (c)
                  (disp-to-string (exn-message c))))
 
+
+
 (xdef scar (lambda (x val)
               (if (string? x)
                   (string-set! x 0 val)
@@ -1253,6 +1255,8 @@
 (define (nth-set! lst n val)
   (x-set-car! (list-tail lst n) val))
 
+
+
 ; rewrite to pass a (true) gensym instead of #f in case var bound to #f
 
 (define (bound? arcname)
@@ -1261,20 +1265,6 @@
                             (lambda () #f)))
 
 (xdef bound (lambda (x) (tnil (bound? x))))
-
-(xdef newstring make-string)
-
-(xdef trunc (lambda (x) (inexact->exact (truncate x))))
-
-; bad name
-
-(xdef exact (lambda (x) (tnil (exint? x))))
-
-(xdef msec                         current-milliseconds)
-(xdef current-process-milliseconds current-process-milliseconds)
-(xdef current-gc-milliseconds      current-gc-milliseconds)
-
-(xdef seconds current-seconds)
 
 (print-hash-table #t)
 
@@ -1363,8 +1353,6 @@
                             args)
                        ()))
 
-(xdef memory current-memory-use)
-
 (xdef declare (lambda (key val)
                 (let ((flag (not (ar-false? val))))
                   (case key
@@ -1386,6 +1374,8 @@
             (date-day d)
             (date-month d)
             (date-year d)))))
+
+
 
 (define (codestring s)
   (let ((i (atpos s 0)))
