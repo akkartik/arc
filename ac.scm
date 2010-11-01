@@ -625,33 +625,6 @@
 (xdef apply (lambda (fn . args)
                (ar-apply fn (ar-apply-args args))))
 
-; special cases of ar-apply for speed and to avoid consing arg lists
-
-(define (ar-funcall0 fn)
-  (if (procedure? fn)
-      (fn)
-      (ar-apply fn (list))))
-
-(define (ar-funcall1 fn arg1)
-  (if (procedure? fn)
-      (fn arg1)
-      (ar-apply fn (list arg1))))
-
-(define (ar-funcall2 fn arg1 arg2)
-  (if (procedure? fn)
-      (fn arg1 arg2)
-      (ar-apply fn (list arg1 arg2))))
-
-(define (ar-funcall3 fn arg1 arg2 arg3)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3)
-      (ar-apply fn (list arg1 arg2 arg3))))
-
-(define (ar-funcall4 fn arg1 arg2 arg3 arg4)
-  (if (procedure? fn)
-      (fn arg1 arg2 arg3 arg4)
-      (ar-apply fn (list arg1 arg2 arg3 arg4))))
-
 ; turn the arguments to Arc apply into a list.
 ; if you call (apply fn 1 2 '(3 4))
 ; then args is '(1 2 (3 4))
@@ -665,9 +638,7 @@
         ((null? (cdr args)) (car args))
         (#t (cons (car args) (ar-apply-args (cdr args))))))
 
-
-
-
+
 
 (xdef cons cons)
 
@@ -813,6 +784,8 @@
 
 (xdef rep ar-rep)
 
+
+
 ; currently rather a joke: returns interned symbols
 
 (define ar-gensym-count 0)
@@ -906,6 +879,39 @@
                (let ((expr (read p)))
                  (if (eof-object? expr) eof expr))))
 
+(xdef open-socket  (lambda (num) (tcp-listen num 50 #t)))
+
+(define (ar-init-socket init-fn . args)
+  (let ((oc (current-custodian))
+        (nc (make-custodian)))
+    (current-custodian nc)
+    (apply
+      (lambda (in out . tail)
+        (current-custodian oc)
+        (associate-custodian nc in out)
+        (list* in out tail))
+      (call-with-values
+        init-fn
+        (if (pair? args)
+            (car args)
+            list)))))
+
+(xdef socket-accept (lambda (s)
+                      (ar-init-socket
+                        (lambda () (tcp-accept s))
+                        (lambda (in out)
+                                ; http://list.cs.brown.edu/pipermail/plt-scheme/2005-August/009414.html
+                          (list (make-limited-input-port in 100000 #t)
+                                out
+                                (let-values (((us them) (tcp-addresses out)))
+                                  them))))))
+
+(xdef socket-connect (lambda (host port)
+                       (ar-init-socket
+                         (lambda () (tcp-connect host port)))))
+
+
+
 ; these work in PLT but not scheme48
 
 (define char->ascii char->integer)
@@ -970,35 +976,7 @@
 (xdef coerce ar-coerce)
 (xdef coerce* coercions)
 
-(xdef open-socket  (lambda (num) (tcp-listen num 50 #t)))
-
-; the 2050 means http requests currently capped at 2 meg
-; http://list.cs.brown.edu/pipermail/plt-scheme/2005-August/009414.html
-
-(xdef socket-accept (lambda (s)
-                      (let ((oc (current-custodian))
-                            (nc (make-custodian)))
-                        (current-custodian nc)
-                        (call-with-values
-                         (lambda () (tcp-accept s))
-                         (lambda (in out)
-                           (let ((in1 (make-limited-input-port in 100000 #t)))
-                             (current-custodian oc)
-                             (associate-custodian nc in1 out)
-                             (list in1
-                                   out
-                                   (let-values (((us them) (tcp-addresses out)))
-                                               them))))))))
-
-; allow Arc to give up root privileges after it
-; calls open-socket. thanks, Eli!
-(define setuid (get-ffi-obj 'setuid #f (_fun _int -> _int)))
-(xdef setuid setuid)
-
-(xdef new-thread thread)
-(xdef kill-thread kill-thread)
-(xdef break-thread break-thread)
-(xdef current-thread current-thread)
+
 
 (define (wrapnil f) (lambda args (apply f args) ()))
 
@@ -1326,8 +1304,6 @@
                               (lambda ()
                                 (thread-cell-set! ar-sema-cell #f)))))))
 
-(xdef dead (lambda (x) (tnil (thread-dead? x))))
-
 ; Added because Mzscheme buffers output.  Not a permanent part of Arc.
 ; Only need to use when declare explicit-flush optimization.
 
@@ -1410,14 +1386,6 @@
             (date-day d)
             (date-month d)
             (date-year d)))))
-
-(xdef sin sin)
-(xdef cos cos)
-(xdef tan tan)
-(xdef asin asin)
-(xdef acos acos)
-(xdef atan atan)
-(xdef log log)
 
 (define (codestring s)
   (let ((i (atpos s 0)))

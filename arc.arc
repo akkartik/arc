@@ -1612,9 +1612,6 @@
 
 (def len> (x n) (> (len x) n))
 
-(mac thread body
-  `(new-thread (fn () ,@body)))
-
 (mac trav (x . fs)
   (w/uniq g
     `((afn (,g)

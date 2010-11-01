@@ -22,3 +22,4 @@ some, all, mem, trues, keep, rem, len, iso are now all generic.
 1. nil == (); type.nil == nil.
   Coerce () 'cons returns () which is not a cons. Can cause infinite loops in defgeneric.
 2. some and keep don't testify.
+3. get rid of setuid in srv; assume arc is running behind apache or nginx

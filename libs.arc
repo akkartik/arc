@@ -1,4 +1,5 @@
-(map load '("strings.arc"
+(map load '("services.arc"
+            "strings.arc"
             "pprint.arc"
             "code.arc"
             "html.arc"
