@@ -189,6 +189,7 @@
            (iso (car x) (car y))
            (iso (cdr x) (cdr y)))))
 
+; bootstrapping version; overloaded later as a generic function
 (def reclist (f xs)
   (and xs (or f.xs (reclist f cdr.xs))))
 
@@ -215,7 +216,6 @@
 (mac case (expr . args)
   `(caselet ,(uniq) ,expr ,@args))
 
-; bootstrapping version; overloaded later as a generic function
 (def some (f seq)
   (reclist f:car seq))
 
@@ -428,7 +428,7 @@
 (def transform-last (f xs)
   (if (cdr xs)
     (cons car.xs (transform-last f cdr.xs))
-    (f car.xs)))
+    (list:f car.xs)))
 
 (= vtables* (table))
 (mac genericexpander(coerce-all coerce-back
@@ -447,7 +447,7 @@
       (def ,name ,allargs
         (aif (aand (vtables* ',name) (it (type:last ,allargs)))
           (apply it ,allargs)
-          ,(with (last-coercer `(apply ,name (transform-last ,allargs [coerce _ 'cons]))
+          ,(with (last-coercer `(apply ,name (transform-last [coerce _ 'cons] ,allargs))
                   all-coercer `(apply ,name (map [coerce _ 'cons] ,allargs)))
              (case (list coerce-all coerce-back)
                (nil nil)  last-coercer
@@ -745,11 +745,6 @@
 
 (def testify (x)
   (if (isa x 'fn) x [is _ x]))
-
-(def some (f seq)
-  (if (alist seq)
-      (reclist f:car seq)
-      (recstring f:seq seq)))
 
 (def all (test seq)
   (~some ~testify.test seq))
