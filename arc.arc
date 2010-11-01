@@ -490,9 +490,6 @@
          (self (cdr xs) (cons (car xs) acc))))
    xs nil))
 
-(mac when (test . body)
-  `(if ,test (do ,@body)))
-
 (mac unless (test . body)
   `(if (no ,test) (do ,@body)))
 
@@ -530,19 +527,12 @@
 ; could bind index instead of gensym
 
 (mac each (var expr . body)
-  (w/uniq (gseq gf gv)
-    `(let ,gseq ,expr
-       (if (alist ,gseq)
-            ((rfn ,gf (,gv)
-               (when (acons ,gv)
-                 (let ,var (car ,gv) ,@body)
-                 (,gf (cdr ,gv))))
-             ,gseq)
-           (isa ,gseq 'table)
-            (maptable (fn ,var ,@body)
-                      ,gseq)
-            (for ,gv 0 (- (len ,gseq) 1)
-              (let ,var (,gseq ,gv) ,@body))))))
+  (w/uniq gv
+    `((afn (,gv)
+        (when (acons ,gv)
+          (let ,var (car ,gv) ,@body)
+          (self (cdr ,gv))))
+      (coerce ,expr 'cons))))
 
 ; (nthcdr x y) = (cut y x).
 
