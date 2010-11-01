@@ -1,0 +1,21 @@
+Patches welcome! If you have tools you use frequently, send them to arc@akkartik.com
+
+- Features so far
+Extensible coerce (rntz; http://arclanguage.org/item?id=9828)
+Bugfixes (http://arclanguage.org/item?id=10830, each on tables returns nil)
+Case can work on lists and other compounds
+
+Generic functions that read from vtables* and dispatch on the type of the _last_ arg.
+There are 4 refinements regarding what to do when there's no entry in vtables*
+  defgeneric: coerce last arg to cons
+  defgeneric*: coerce _all_ args to cons
+  deftransform: coerce last arg to cons, coerce back to its original type afterward
+  deftransform*: coerce all args to cons, coerce back to original type afterward
+  (Previous discussions: http://arclanguage.org/item?id=11779, http://arclanguage.org/item?id=11865)
+
+some, all, mem, trues, keep, rem, len, iso are now all generic.
+
+- Incompatibilities
+1. nil == (); type.nil == nil.
+  Coerce () 'cons returns () which is not a cons. Can cause infinite loops in defgeneric.
+2. some and keep don't testify.
