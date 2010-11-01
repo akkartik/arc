@@ -56,7 +56,7 @@
       (char? x)
       (string? x)
       (number? x)
-      (eq? x ())))
+      (null? x)))
 
 (define (ssyntax? x)
   (and (symbol? x)
@@ -288,7 +288,7 @@
       (ac-complex-fn args body env)
       (ac-nameit
        (ac-dbname env)
-       `(lambda ,(let ((a args)) (if (eq? a ()) () a))
+       `(lambda ,(let ((a args)) (if (null? a) () a))
           ,@(ac-body* body (append (ac-arglist args) env))))))
 
 ; does an fn arg list use optional parameters or destructuring?
@@ -322,7 +322,7 @@
 ;   (not destructuring), so they must be passed or be optional.
 
 (define (ac-complex-args args env ra is-params)
-  (cond ((eq? args ()) ())
+  (cond ((null? args) ())
         ((symbol? args) (list (list args ra)))
         ((pair? args)
          (let* ((x (if (and (pair? (car args)) (eqv? (caar args) 'o))
@@ -550,12 +550,12 @@
 ; maybe we should use full Arc car and cdr, so we can destructure more things
 
 (define (ar-xcar x)
-  (if (eq? x ())
+  (if (null? x)
       ()
       (car x)))
 
 (define (ar-xcdr x)
-  (if (eq? x ())
+  (if (null? x)
       ()
       (cdr x)))
 
@@ -571,7 +571,7 @@
 ; Scheme lists (e.g. . body of a macro).
 
 (define (ar-false? x)
-  (or (eq? x ()) (eq? x #f)))
+  (or (null? x) (eq? x #f)))
 
 ; call a function or perform an array ref, hash ref, &c
 
@@ -655,12 +655,12 @@
 
 (xdef car (lambda (x)
              (cond ((pair? x)     (car x))
-                   ((eq? x ())    ())
+                   ((null? x)     ())
                    (#t            (err "Can't take car of" x)))))
 
 (xdef cdr (lambda (x)
              (cond ((pair? x)     (cdr x))
-                   ((eq? x ())   ())
+                   ((null? x)     ())
                    (#t            (err "Can't take cdr of" x)))))
 
 (define (tnil x) (if x 't ()))
@@ -700,7 +700,7 @@
   (or (null? seq)
       (and (test (car seq)) (all test (cdr seq)))))
 
-(define (arc-list? x) (or (pair? x) (eq? x ())))
+(define (arc-list? x) (or (pair? x) (null? x)))
 
 ; Generic +: strings, lists, numbers.
 ; Return val has same type as first argument.
@@ -1026,7 +1026,7 @@
 ;                           (if (pair? args) (car args) ())))
 
 (define (fill-table h pairs)
-  (if (eq? pairs ())
+  (if (null? pairs)
       h
       (let ((pair (car pairs)))
         (begin (hash-table-put! h (car pair) (cadr pair))
@@ -1246,7 +1246,7 @@
 
 (xdef sref
   (lambda (com val ind)
-    (cond ((hash-table? com)  (if (eq? val ())
+    (cond ((hash-table? com)  (if (null? val)
                                   (hash-table-remove! com ind)
                                   (hash-table-put! com ind val)))
           ((string? com) (string-set! com ind val))
