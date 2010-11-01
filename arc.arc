@@ -216,7 +216,7 @@
   `(caselet ,(uniq) ,expr ,@args))
 
 ; bootstrapping version; overloaded later as a generic function
-(def some (seq f)
+(def some (f seq)
   (reclist f:car seq))
 
 
@@ -235,7 +235,7 @@
 
 
 (def map (f . seqs)
-  (if (some seqs [isa _ 'string])
+  (if (some [isa _ 'string] seqs)
        (withs (n   (apply min (map len seqs))
                new (newstring n))
          ((afn (i)
@@ -247,7 +247,7 @@
       (no (cdr seqs))
        (map1 f (car seqs))
       ((afn (seqs)
-        (if (some seqs no)
+        (if (some no seqs)
             nil
             (cons (apply f (map1 car seqs))
                   (self (map1 cdr seqs)))))
@@ -505,13 +505,13 @@
 (def testify (x)
   (if (isa x 'fn) x [is _ x]))
 
-(def some (seq f)
+(def some (f seq)
   (if (alist seq)
       (reclist f:car seq)
       (recstring f:seq seq)))
 
 (def all (test seq)
-  (~some seq ~testify.test))
+  (~some (complement (testify test)) seq))
 
 (def mem (test seq)
   (let f (testify test)
@@ -590,20 +590,20 @@
       (last (cdr xs))
       (car xs)))
 
-(def keep (seq f)
+(def keep (f seq)
   (if (alist seq)
     ((afn (s)
       (if (no s)        nil
           (f (car s))   (cons (car s) (self (cdr s)))
                         (self (cdr s))))
      seq)
-    (coerce (keep (coerce seq 'cons) f) 'string)))
+    (coerce (keep f (coerce seq 'cons)) 'string)))
 
-(def rem (seq test)
-  (keep seq ~testify.test))
+(def rem (test seq)
+  (keep ~testify.test seq))
 
 ;(def trues (f seq)
-;  (rem (map f seq) nil))
+;  (rem nil (map f seq)))
 
 (def trues (f xs)
   (and xs
@@ -653,7 +653,7 @@
               (,setter (cdr ,g)))))))
 
 (def adjoin (x xs (o test iso))
-  (if (some xs [test x _])
+  (if (some [test x _] xs)
       xs
       (cons x xs)))
 
@@ -667,14 +667,14 @@
   (w/uniq g
     (let (binds val setter) (setforms place)
       `(atwiths ,(+ (list g test) binds)
-         (,setter (rem ,val ,g))))))
+         (,setter (rem ,g ,val))))))
 
 (mac togglemem (x place . args)
   (w/uniq gx
     (let (binds val setter) (setforms place)
       `(atwiths ,(+ (list gx x) binds)
          (,setter (if (mem ,gx ,val)
-                      (rem ,val ,gx)
+                      (rem ,gx ,val)
                       (adjoin ,gx ,val ,@args)))))))
 
 (mac ++ (place (o i 1))
@@ -699,7 +699,7 @@
   (with (gop    (uniq)
          gargs  (map [uniq] args)
          mix    (afn seqs
-                  (if (some seqs no)
+                  (if (some no seqs)
                       nil
                       (+ (map car seqs)
                          (apply self (map cdr seqs))))))
@@ -965,7 +965,7 @@
       (is elt (car seq))
        (reinsert-sorted test elt (cdr seq))
       (test elt (car seq))
-       (cons elt (rem seq elt))
+       (cons elt (rem elt seq))
       (cons (car seq) (reinsert-sorted test elt (cdr seq)))))
 
 (mac insortnew (test elt seq)
@@ -1258,7 +1258,8 @@
   `(time (repeat 10 ,expr)))
 
 (def union (f xs ys)
-  (+ xs (rem ys (fn (y) (some xs [f _ y])))))
+  (+ xs (rem (fn (y) (some [f _ y] xs))
+             ys)))
 
 (= templates* (table))
 
@@ -1416,7 +1417,7 @@
 ; Could combine with firstn if put f arg last, default to (fn (x) t).
 
 (def retrieve (n f xs)
-  (if (no n)                 (keep xs f)
+  (if (no n)                 (keep f xs)
       (or (<= n 0) (no xs))  nil
       (f (car xs))           (cons (car xs) (retrieve (- n 1) f (cdr xs)))
                              (retrieve n f (cdr xs))))

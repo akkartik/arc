@@ -256,11 +256,14 @@ Connection: close"))
           op
           args
           (and (is type 'post)
-               (some (cdr lines)
-                     [and (begins _ "Content-Length:")
-                          (errsafe:coerce (cadr tokens._) 'int)]))
-          (some (cdr lines)
-                [and (begins _ "Cookie:") parsecookies._]))))
+               (some (fn (s)
+                       (and (begins s "Content-Length:")
+                            (errsafe:coerce (cadr (tokens s)) 'int)))
+                     (cdr lines)))
+          (some (fn (s)
+                  (and (begins s "Cookie:")
+                       (parsecookies s)))
+                (cdr lines)))))
 
 ; (parseurl "GET /p1?foo=bar&ug etc") -> (get p1 (("foo" "bar") ("ug")))
 

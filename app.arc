@@ -362,7 +362,7 @@
     sym     (or (sym:car:tokens str) fail)
     syms    (map sym (tokens str))
     sexpr   (errsafe (readall str))
-    users   (rem tokens.str [no (goodname _)])
+    users   (rem [no (goodname _)] (tokens str))
     toks    (tokens str)
     bigtoks (tokens str)
     lines   (lines str)
@@ -429,7 +429,7 @@
 ; http://daringfireball.net/projects/markdown/syntax
 
 (def md-from-form (str (o nolinks))
-  (markdown (trim (rem esc-tags.str #\return) 'end) 60 nolinks))
+  (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks))
 
 (def markdown (s (o maxurl) (o nolinks))
   (let ital nil
@@ -582,7 +582,7 @@
 (def parse-time (s)
   (let (nums (o label "")) (halve s letter)
     (with ((h (o m 0)) (map int (tokens nums ~digit))
-           cleanlabel  (downcase (rem label ~alphadig)))
+           cleanlabel  (downcase (rem ~alphadig label)))
       (+ (* (if (is h 12)
                  (if (in cleanlabel "am" "midnight")
                      0

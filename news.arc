@@ -142,7 +142,7 @@
 ; Note that users will now only consider currently loaded users.
 
 (def users ((o f idfn))
-  (keep keys.profs* f))
+  (keep f (keys profs*)))
 
 (def check-key (u k)
   (and u (mem k (uvar u keys))))
@@ -372,11 +372,12 @@
       (editor user)))
 
 (def visible (user is)
-  (keep is [cansee user _]))
+  (keep [cansee user _] is))
 
 (def cansee-descendant (user c)
   (or (cansee user c)
-      (some c!kids [cansee-descendant user (item _)])))
+      (some [cansee-descendant user (item _)]
+            c!kids)))
 
 (def editor (u)
   (and u (or (admin u) (> (uvar u auth) 0))))
@@ -737,14 +738,13 @@ function vote(node) {
       (pr "No such user.")))
 
 (def user-page (user subject)
-  (with (here (user-url subject)
-         submitted (uvar subject submitted))
+  (let here (user-url subject)
     (shortpage user nil nil (+ "Profile: " subject) here
       (profile-form user subject)
       (br2)
-      (when (some submitted astory:item)
+      (when (some astory:item (uvar subject submitted))
         (underlink "submissions" (submitted-url subject)))
-      (when (some submitted acomment:item)
+      (when (some acomment:item (uvar subject submitted))
         (sp)
         (underlink "comments" (threads-url subject)))
       (hook 'user user subject))))
@@ -919,8 +919,8 @@ function vote(node) {
       (pr "Can't display that.")))
 
 (def voted-stories (user subject)
-  (keep (map item (keys:votes subject))
-        [and (astory _) (cansee user _)]))
+  (keep [and (astory _) (cansee user _)]
+        (map item (keys:votes subject))))
 
 
 ; Story Display
@@ -1636,9 +1636,9 @@ function vote(node) {
   (if (banned-ips* ip) (kill i 'banned-ip)))
 
 (def comment-ban-test (user i ip string kill-list ignore-list)
-  (when (some ignore-list [posmatch _ string])
+  (when (some [posmatch _ string] ignore-list)
     (ignore nil user 'comment-ban))
-  (when (or (banned-ips* ip) (some kill-list [posmatch _ string]))
+  (when (or (banned-ips* ip) (some [posmatch _ string] kill-list))
     (kill i 'comment-ban)))
 
 ; An IP is banned when multiple ignored users have submitted over
@@ -1652,7 +1652,7 @@ function vote(node) {
   (when (and s!dead (ignored s!by))
     (let bads (loaded-items [and _!dead (astory _) (is _!ip s!ip)])
       (when (and (len> bads ip-ban-threshold*)
-                 (some bads [and (ignored _!by) (isnt _!by s!by)]))
+                 (some [and (ignored _!by) (isnt _!by s!by)] bads))
         (set-ip-ban nil s!ip t)))))
 
 (def killallby (user)
@@ -2200,7 +2200,8 @@ function vote(node) {
   (map item (retrieve limit acomment:item (uvar user submitted))))
 
 (def subcomment (c)
-  (some ancestors.c [and (acomment _) (is _!by c!by) (no _!deleted)]))
+  (some [and (acomment _) (is _!by c!by) (no _!deleted)]
+        (ancestors c)))
 
 (def ancestors (i)
   (accum a (trav i!parent a:item self:!parent:item)))
@@ -2460,7 +2461,7 @@ first asterisk isn't whitespace.
                               pairs  (killedsites))
                          (+ pairs (map [list _ (banned _)]
                                        (rem (fn (d)
-                                              (some pairs [caris _ d]))
+                                              (some [caris _ d] pairs))
                                             (keys banned-sites*)))))
       (let ban (car (banned-sites* site))
         (tr (tdr (when deads

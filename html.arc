@@ -374,7 +374,7 @@
             (no intag) (pr c))))))
 
 (def clean-url (u)
-  (rem u [in _ #\" #\' #\< #\>]))
+  (rem [in _ #\" #\' #\< #\>] u))
 
 (def shortlink (url)
   (unless (or (no url) (< (len url) 7))

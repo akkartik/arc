@@ -107,19 +107,19 @@
   :should be 3)
 
 (test-ac "some 1 - string"
-  :valueof (some "a@b" (testify #\@))
+  :valueof (some (testify #\@) "a@b")
   :should be 't)
 
 (test-ac "some 2"
-  :valueof (some "abc" (testify #\@))
+  :valueof (some (testify #\@) "abc")
   :should be ())
 
 (test-ac "some 3 - list"
-  :valueof (some '(1 2 3) (testify 1))
+  :valueof (some testify.1 '(1 2 3))
   :should be 't)
 
 (test-ac "some 4"
-  :valueof (some '(1 2 3) (testify 4))
+  :valueof (some testify.4 '(1 2 3))
   :should be ())
 
 (test-ac "find 1 - string"
@@ -163,13 +163,13 @@
   :should be 't)
 
 (test-ac "rem 1"
-  :valueof (rem '(1 2 3 4) odd)
+  :valueof (rem odd '(1 2 3 4))
   :should be '(2 4))
 
 (test-ac "rem 2 - string"
-  :valueof (rem "a@b" #\@)
+  :valueof (rem #\@ "a@b")
   :should be "ab")
 
 (test-ac "keep 1 - string"
-  :valueof (keep "a@b" (testify #\@))
+  :valueof (keep (testify #\@) "a@b")
   :should be "@")
