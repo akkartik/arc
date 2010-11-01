@@ -420,13 +420,18 @@
 
 
 
+(def transform-last (f xs)
+  (if (cdr xs)
+    (cons car.xs (transform-last f cdr.xs))
+    (f car.xs)))
+
 (= vtables* (table))
 (mac genericexpander(coerce-all coerce-back
                      name args . body)
   (w/uniq (allargs basefn)
     `(do
-      (let ,basefn (fn ,args ,@body)
-        (= (vtables* ',name)
+      (= (vtables* ',name)
+        (let ,basefn (fn ,args ,@body)
            ; Assume body handles primitives by default. Can be overridden.
            (obj () ,basefn
                 sym ,basefn
@@ -437,12 +442,12 @@
       (def ,name ,allargs
         (aif (aand (vtables* ',name) (it (type:car ,allargs)))
           (apply it ,allargs)
-          ,(with (car-coercer `(apply ,name (coerce (car ,allargs) 'cons) (cdr ,allargs))
+          ,(with (last-coercer `(apply ,name (transform-last ,allargs [coerce _ 'cons]))
                   all-coercer `(apply ,name (map [coerce _ 'cons] ,allargs)))
              (case (list coerce-all coerce-back)
-               (nil nil)  car-coercer
+               (nil nil)  last-coercer
                (t nil)  all-coercer
-               (nil t)    `(coerce ,car-coercer (type (car ,allargs)))
+               (nil t)    `(coerce ,last-coercer (type (car ,allargs)))
                (t t)  `(coerce ,all-coercer (type (car ,allargs))))))))))
 
 (mac defgeneric (name args . body)
@@ -587,8 +592,8 @@
 
 (def last (xs)
   (if (cdr xs)
-      (last (cdr xs))
-      (car xs)))
+    (last cdr.xs)
+    (car xs)))
 
 (def keep (f seq)
   (if (alist seq)
