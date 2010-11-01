@@ -163,13 +163,13 @@
   :should be 't)
 
 (test-ac "rem 1"
-  :valueof (rem odd '(1 2 3 4))
+  :valueof (rem '(1 2 3 4) odd)
   :should be '(2 4))
 
 (test-ac "rem 2 - string"
-  :valueof (rem #\@ "a@b")
+  :valueof (rem "a@b" #\@)
   :should be "ab")
 
 (test-ac "keep 1 - string"
-  :valueof (keep #\@ "a@b")
+  :valueof (keep "a@b" (testify #\@))
   :should be "@")

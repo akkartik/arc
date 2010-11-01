@@ -142,7 +142,7 @@
 ; Note that users will now only consider currently loaded users.
 
 (def users ((o f idfn))
-  (keep f (keys profs*)))
+  (keep keys.profs* f))
 
 (def check-key (u k)
   (and u (mem k (uvar u keys))))
@@ -372,7 +372,7 @@
       (editor user)))
 
 (def visible (user is)
-  (keep [cansee user _] is))
+  (keep is [cansee user _]))
 
 (def cansee-descendant (user c)
   (or (cansee user c)
@@ -919,8 +919,8 @@ function vote(node) {
       (pr "Can't display that.")))
 
 (def voted-stories (user subject)
-  (keep [and (astory _) (cansee user _)]
-        (map item (keys:votes subject))))
+  (keep (map item (keys:votes subject))
+        [and (astory _) (cansee user _)]))
 
 
 ; Story Display

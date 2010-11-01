@@ -590,26 +590,20 @@
       (last (cdr xs))
       (car xs)))
 
-(def rem (test seq)
-  (let f (testify test)
-    (if (alist seq)
-        ((afn (s)
-           (if (no s)       nil
-               (f (car s))  (self (cdr s))
-                            (cons (car s) (self (cdr s)))))
-          seq)
-        (coerce (rem test (coerce seq 'cons)) 'string))))
+(def keep (seq f)
+  (if (alist seq)
+    ((afn (s)
+      (if (no s)        nil
+          (f (car s))   (cons (car s) (self (cdr s)))
+                        (self (cdr s))))
+     seq)
+    (coerce (keep (coerce seq 'cons) f) 'string)))
 
-; Seems like keep doesn't need to testify-- would be better to
-; be able to use tables as fns.  But rem does need to, because
-; often want to rem a table from a list.  So maybe the right answer
-; is to make keep the more primitive, not rem.
-
-(def keep (test seq)
-  (rem (complement (testify test)) seq))
+(def rem (seq test)
+  (keep seq ~testify.test))
 
 ;(def trues (f seq)
-;  (rem nil (map f seq)))
+;  (rem (map f seq) nil))
 
 (def trues (f xs)
   (and xs
@@ -673,14 +667,14 @@
   (w/uniq g
     (let (binds val setter) (setforms place)
       `(atwiths ,(+ (list g test) binds)
-         (,setter (rem ,g ,val))))))
+         (,setter (rem ,val ,g))))))
 
 (mac togglemem (x place . args)
   (w/uniq gx
     (let (binds val setter) (setforms place)
       `(atwiths ,(+ (list gx x) binds)
          (,setter (if (mem ,gx ,val)
-                      (rem ,gx ,val)
+                      (rem ,val ,gx)
                       (adjoin ,gx ,val ,@args)))))))
 
 (mac ++ (place (o i 1))
@@ -971,7 +965,7 @@
       (is elt (car seq))
        (reinsert-sorted test elt (cdr seq))
       (test elt (car seq))
-       (cons elt (rem elt seq))
+       (cons elt (rem seq elt))
       (cons (car seq) (reinsert-sorted test elt (cdr seq)))))
 
 (mac insortnew (test elt seq)
@@ -1264,8 +1258,7 @@
   `(time (repeat 10 ,expr)))
 
 (def union (f xs ys)
-  (+ xs (rem (fn (y) (some xs [f _ y]))
-             ys)))
+  (+ xs (rem ys (fn (y) (some xs [f _ y])))))
 
 (= templates* (table))
 
@@ -1423,7 +1416,7 @@
 ; Could combine with firstn if put f arg last, default to (fn (x) t).
 
 (def retrieve (n f xs)
-  (if (no n)                 (keep f xs)
+  (if (no n)                 (keep xs f)
       (or (<= n 0) (no xs))  nil
       (f (car xs))           (cons (car xs) (retrieve (- n 1) f (cdr xs)))
                              (retrieve n f (cdr xs))))

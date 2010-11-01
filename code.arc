@@ -38,7 +38,7 @@
   (in x 'quote 'unquote 'quasiquote 'unquote-splicing))
 
 (def common-operators (files)
-  (keep [and (isa (car _) 'sym) (bound (car _))] (common-tokens files)))
+  (keep common-tokens.files [and (isa (car _) 'sym) (bound (car _))]))
 
 (def top40 (xs)
   (map prn (firstn 40 xs))
