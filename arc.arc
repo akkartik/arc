@@ -190,7 +190,7 @@
            (iso (cdr x) (cdr y)))))
 
 (def reclist (f xs)
-  (and xs (or (f xs) (reclist f (cdr xs)))))
+  (and xs (or f.xs (reclist f cdr.xs))))
 
 (mac in (x . choices)
   (w/uniq g
@@ -420,6 +420,11 @@
 
 
 
+(def last (xs)
+  (if (cdr xs)
+    (last cdr.xs)
+    (car xs)))
+
 (def transform-last (f xs)
   (if (cdr xs)
     (cons car.xs (transform-last f cdr.xs))
@@ -440,7 +445,7 @@
                 num ,basefn
                 cons ,basefn)))
       (def ,name ,allargs
-        (aif (aand (vtables* ',name) (it (type:car ,allargs)))
+        (aif (aand (vtables* ',name) (it (type:last ,allargs)))
           (apply it ,allargs)
           ,(with (last-coercer `(apply ,name (transform-last ,allargs [coerce _ 'cons]))
                   all-coercer `(apply ,name (map [coerce _ 'cons] ,allargs)))
@@ -494,39 +499,6 @@
     `((rfn ,gf (,gp)
         (when ,gp ,@body (,gf ,test)))
       ,test)))
-
-(def empty (seq)
-  (or (no seq)
-      (and (or (is (type seq) 'string) (is (type seq) 'table))
-           (is (len seq) 0))))
-
-(def recstring (test s (o start 0))
-  ((afn (i)
-     (and (< i (len s))
-          (or (test i)
-              (self (+ i 1)))))
-   start))
-
-(def testify (x)
-  (if (isa x 'fn) x [is _ x]))
-
-(def some (f seq)
-  (if (alist seq)
-      (reclist f:car seq)
-      (recstring f:seq seq)))
-
-(def all (test seq)
-  (~some (complement (testify test)) seq))
-
-(def mem (test seq)
-  (let f (testify test)
-    (reclist [if (f:car _) _] seq)))
-
-(def find (test seq)
-  (let f (testify test)
-    (if (alist seq)
-        (reclist   [if (f:car _) (car _)] seq)
-        (recstring [if (f:seq _) (seq _)] seq))))
 
 
 
@@ -590,32 +562,7 @@
           (when ,var ,@body (,gf ,test))))
       ,test)))
 
-(def last (xs)
-  (if (cdr xs)
-    (last cdr.xs)
-    (car xs)))
-
-(def keep (f seq)
-  (if (alist seq)
-    ((afn (s)
-      (if (no s)        nil
-          (f (car s))   (cons (car s) (self (cdr s)))
-                        (self (cdr s))))
-     seq)
-    (coerce (keep f (coerce seq 'cons)) 'string)))
-
-(def rem (test seq)
-  (keep ~testify.test seq))
-
-;(def trues (f seq)
-;  (rem nil (map f seq)))
-
-(def trues (f xs)
-  (and xs
-      (let fx (f (car xs))
-        (if fx
-            (cons fx (trues f (cdr xs)))
-            (trues f (cdr xs))))))
+
 
 (mac do1 args
   (w/uniq g
@@ -761,6 +708,89 @@
     `(withs (,var nil ,gf (testify ,endval))
        (while (no (,gf (= ,var ,expr)))
          ,@body))))
+
+
+
+(def fill-table (table data)
+  (each (k v) (pair data) (= (table k) v))
+  table)
+
+(def keys (h)
+  (accum a (each (k v) h (a k))))
+
+(def vals (h)
+  (accum a (each (k v) h (a v))))
+
+(def tablist (h)
+  (accum a (maptable (fn args (a args)) h)))
+
+(def listtab (al)
+  (let h (table)
+    (map (fn ((k v)) (= (h k) v))
+         al)
+    h))
+
+(mac obj args
+  `(listtab (list ,@(map (fn ((k v))
+                           `(list ',k ,v))
+                         (pair args)))))
+
+
+
+(def empty (seq)
+  (is len.seq 0))
+
+(defgeneric reclist (f xs)
+  (and xs (or f.xs (reclist f cdr.xs))))
+
+(def testify (x)
+  (if (isa x 'fn) x [is _ x]))
+
+(def some (f seq)
+  (if (alist seq)
+      (reclist f:car seq)
+      (recstring f:seq seq)))
+
+(def all (test seq)
+  (~some ~testify.test seq))
+
+(def mem (test seq)
+  (let f (testify test)
+    (reclist [if (f:car _) _] seq)))
+
+(def find (test seq)
+  (some [if (testify.test _) _] seq))
+
+(def recstring (test s (o start 0))
+  ((afn (i)
+     (and (< i (len s))
+          (or (test i)
+              (self (+ i 1)))))
+   start))
+
+(def keep (f seq)
+  (if (alist seq)
+    ((afn (s)
+      (if (no s)        nil
+          (f (car s))   (cons (car s) (self (cdr s)))
+                        (self (cdr s))))
+     seq)
+    (coerce (keep f (coerce seq 'cons)) 'string)))
+
+(def rem (test seq)
+  (keep ~testify.test seq))
+
+;(def trues (f seq)
+;  (rem nil (map f seq)))
+
+(def trues (f xs)
+  (and xs
+      (let fx (f (car xs))
+        (if fx
+            (cons fx (trues f (cdr xs)))
+            (trues f (cdr xs))))))
+
+
 
 ;(def macex (e)
 ;  (if (atom e)
@@ -1089,30 +1119,6 @@
       nil
       (and (cdr x) (or (atom (cdr x))
                        (dotted (cdr x))))))
-
-(def fill-table (table data)
-  (each (k v) (pair data) (= (table k) v))
-  table)
-
-(def keys (h)
-  (accum a (each (k v) h (a k))))
-
-(def vals (h)
-  (accum a (each (k v) h (a v))))
-
-(def tablist (h)
-  (accum a (maptable (fn args (a args)) h)))
-
-(def listtab (al)
-  (let h (table)
-    (map (fn ((k v)) (= (h k) v))
-         al)
-    h))
-
-(mac obj args
-  `(listtab (list ,@(map (fn ((k v))
-                           `(list ',k ,v))
-                         (pair args)))))
 
 (def load-table (file (o eof))
   (w/infile i file (read-table i eof)))
@@ -1794,4 +1800,3 @@
 ; crazy that finding the top 100 nos takes so long:
 ;  (let bb (n-of 1000 (rand 50)) (time10 (bestn 100 > bb)))
 ;  time: 2237 msec.  -> now down to 850 msec
-
