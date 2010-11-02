@@ -7,6 +7,12 @@
 (mac thread body
   `(new-thread (fn () ,@body)))
 
+(= ccc $.call-with-current-continuation)
+
+(= quit $.exit)
+
+; need to use a better seed
+(= rand $.random)
 (= sin $.sin)
 (= cos $.cos)
 (= tan $.tan)
@@ -27,3 +33,5 @@
 (= msec $.current-milliseconds)
 (= current-process-milliseconds $.current-process-milliseconds)
 (= current-gc-milliseconds $.current-gc-milliseconds)
+
+(= sleep ($:wrapnil sleep))

@@ -325,7 +325,7 @@
 ; be missing.
 
 (define (ac-complex-fn args body env)
-  (let* ((ra (ar-gensym))
+  (let* ((ra (gensym))
          (z (ac-complex-args args env ra #t)))
     `(lambda ,ra
        (let* ,z
@@ -529,7 +529,7 @@
         (#t (list (car fns) (decompose (cdr fns) args)))))
 
 (define (ac-andf s env)
-  (ac (let ((gs (map (lambda (x) (ar-gensym)) (cdr s))))
+  (ac (let ((gs (map (lambda (x) (gensym)) (cdr s))))
                `((fn ,gs
                    (and ,@(map (lambda (f) `(,f ,@gs))
                                (cdar s))))
@@ -786,18 +786,6 @@
 
 
 
-; currently rather a joke: returns interned symbols
-
-(define ar-gensym-count 0)
-
-(define (ar-gensym)
-  (set! ar-gensym-count (+ ar-gensym-count 1))
-  (string->symbol (string-append "gs" (number->string ar-gensym-count))))
-
-(xdef uniq ar-gensym)
-
-(xdef ccc call-with-current-continuation)
-
 (xdef infile  open-input-file)
 
 (xdef outfile (lambda (f . args)
@@ -980,11 +968,6 @@
 
 (define (wrapnil f) (lambda args (apply f args) ()))
 
-(xdef sleep (wrapnil sleep))
-
-; Will system "execute" a half-finished string if thread killed
-; in the middle of generating it?
-
 (xdef system (wrapnil system))
 
 (xdef pipe-from (lambda (cmd)
@@ -1032,14 +1015,12 @@
                   (hash-table-for-each table fn)
                   table))
 
+
+
 (define (protect during after)
   (dynamic-wind (lambda () #t) during after))
 
 (xdef protect protect)
-
-; need to use a better seed
-
-(xdef rand random)
 
 (xdef dir (lambda (name)
             (map path->string (directory-list name))))
@@ -1059,6 +1040,8 @@
 (xdef mvfile (lambda (old new)
                 (rename-file-or-directory old new #t)
                 ()))
+
+
 
 ; top level read-eval-print
 ; tle kept as a way to get a break loop when a scheme err
@@ -1266,6 +1249,8 @@
 
 (xdef bound (lambda (x) (tnil (bound? x))))
 
+(xdef uniq gensym)
+
 (print-hash-table #t)
 
 (xdef client-ip (lambda (port)
@@ -1303,8 +1288,6 @@
 
 (xdef ssexpand (lambda (x)
                   (if (symbol? x) (expand-ssyntax x) x)))
-
-(xdef quit exit)
 
 ; there are two ways to close a TCP output port.
 ; (close o) waits for output to drain, then closes UNIX descriptor.
