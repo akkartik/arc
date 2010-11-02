@@ -5,13 +5,6 @@ $ for escaping to scheme
 Extensible coerce (rntz; http://arclanguage.org/item?id=9828)
 http://awwx.ws/defarc
 http://awwx.ws/implicit
-Bugfixes (http://arclanguage.org/item?id=10830, each on tables returns nil)
-Case can work on lists and other compounds
-
-srv:
-  parse IP from X-Forwarded-For
-  allow nested paths to be accessed inside arc/static
-  more mime-types, more html attributes, more useful logging
 
 Generic functions that read from vtables* and dispatch on the type of the _last_ arg.
 There are 4 refinements regarding what to do when there's no entry in vtables*
@@ -20,11 +13,22 @@ There are 4 refinements regarding what to do when there's no entry in vtables*
   deftransform: coerce last arg to cons, coerce back to its original type afterward
   deftransform*: coerce all args to cons, coerce back to original type afterward
   (Previous discussions: http://arclanguage.org/item?id=11779, http://arclanguage.org/item?id=11865)
-
 some, all, mem, trues, keep, rem, len, iso are now all generic.
 
-- Incompatibilities
+pervasive keyword args. If a function's args are (a b c), (:c 3 1 2) => (1 2 3), etc.
+new arglist syntax. (a b ? c d . e) => c, d are optional, e is a rest/body arg.
+
+srv:
+  parse IP from X-Forwarded-For
+  allow nested paths to be accessed inside arc/static
+  more mime-types, more html attributes, more useful logging
+
+Bugfixes (http://arclanguage.org/item?id=10830, each on tables returns nil)
+Case can work on lists and other compounds
+
+- Incompatibilities and gotchas
 1. nil == (); type.nil == nil.
-  Coerce () 'cons returns () which is not a cons. Can cause infinite loops in defgeneric.
-2. some and keep don't testify.
-3. get rid of setuid in srv; assume arc is running behind apache or nginx
+2. Optional args have a new syntax. (a (o b) (o c 3)) => (a ? b nil c 3)
+3. some and keep don't testify.
+4. Always handle null values when defining a generic
+5. get rid of setuid in srv; assume arc is running behind apache or nginx
