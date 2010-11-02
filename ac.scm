@@ -341,8 +341,8 @@
 
 (define (keyword-args args rest-param)
   (cond
-    ((null? args)  '())
-    ((not (pair? args))  '())
+    ((null? args)  ())
+    ((not (pair? args))  ())
     ((keyword-arg? (car args))  (let ((param (keyword-arg->symbol (car args))))
                                   (cons (cons param
                                               (if (equal? param rest-param)
@@ -353,7 +353,7 @@
 
 (define (rest-param params)
   (cond
-    ((null? params)  '())
+    ((null? params)  ())
     ((not (pair? params))   params)
     (#t   (rest-param (cdr params)))))
 
@@ -365,15 +365,15 @@
 
 (define (strip-keyword-args args rest-param)
   (cond
-    ((null? args)  '())
+    ((null? args)  ())
     ((keyword-arg? (car args))  (if (equal? (keyword-arg->symbol (car args)) rest-param)
-                                  '()
+                                  ()
                                   (strip-keyword-args (cddr args) rest-param)))
     (#t   (cons (car args) (strip-keyword-args (cdr args) rest-param)))))
 
 (define (partition-optional-params oparams)
   (cond
-    ((not (pair? oparams))  '())
+    ((not (pair? oparams))  ())
     ((not (pair? (cdr oparams)))  (list oparams))
     (#t   (cons (cons (car oparams)
                       (cadr oparams))
@@ -384,19 +384,19 @@
     (let ((optargs (member '? params)))
       (if optargs
         (cdr optargs)
-        '()))
+        ()))
     params))
 
 (define (strip-rest params)
   (cond
-    ((null? params) '())
-    ((not (pair? params))   '())
+    ((null? params) ())
+    ((not (pair? params))   ())
     (#t   (cons (car params)
                 (strip-rest (cdr params))))))
 
 (define (vars-in-paramlist params)
   (cond
-    ((null? params)  '())
+    ((null? params)  ())
     ((not (pair? params))   (list params)) ; rest
     ((equal? (car params) '?)   (vars-in-optional-paramlist (cdr params)))
     (#t   (append (vars-in-paramlist (car params))
@@ -404,14 +404,14 @@
 
 (define (vars-in-optional-paramlist params)
   (cond
-    ((null? params)  '())
+    ((null? params)  ())
     ((not (pair? params))   (list params)) ; rest
     (#t (cons (car params)
               (vars-in-optional-paramlist (cddr params)))))) ; skip default
 
 (define (params-without-defaults params)
   (cond
-    ((null? params)  '())
+    ((null? params)  ())
     ((not (pair? params))   params) ; rest
     ((equal? (car params) '?)   (optional-params-without-defaults (cdr params)))
     (#t   (cons (car params)
@@ -419,7 +419,7 @@
 
 (define (optional-params-without-defaults params)
   (cond
-    ((null? params)  '())
+    ((null? params)  ())
     ((not (pair? params))   params) ; rest
     (#t (cons (car params)
               (optional-params-without-defaults (cddr params)))))) ; skip default
@@ -884,7 +884,7 @@
   (cond ((ar-tagged? x)     (vector-ref x 1))
         ((pair? x)          'cons)
         ((symbol? x)        'sym)
-        ((null? x)          '())
+        ((null? x)          ())
         ((procedure? x)     'fn)
         ((char? x)          'char)
         ((string? x)        'string)
@@ -1042,7 +1042,7 @@
  `((fn      (cons   ,(lambda (l) (lambda (i) (list-ref l i))))
             (string ,(lambda (s) (lambda (i) (string-ref s i))))
             (table  ,(lambda (h) (case-lambda
-                                  ((k) (hash-table-get h k '()))
+                                  ((k) (hash-table-get h k ()))
                                   ((k d) (hash-table-get h k d))))))
 
    (string  (int    ,number->string)
