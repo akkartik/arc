@@ -33,6 +33,7 @@
 
 (defarc (ac s env)
   (cond ((string? s) (ac-string s env))
+        ((keyword-arg? s) (list 'quote s))
         ((literal? s) s)
         ((eqv? s 'nil) ())
         ((ssyntax? s) (ac (expand-ssyntax s) env))
@@ -297,26 +298,146 @@
         ((pair? (car env)) (caar env))
         (#t (ac-dbname (cdr env)))))
 
-; translate fn directly into a lambda if it has ordinary
-; parameters, otherwise use a rest parameter and parse it.
+
+
+(define conventional-optional-args #f)
 
 (define (ac-fn args body env)
-  (if (ac-complex-args? args)
-      (ac-complex-fn args body env)
-      (ac-nameit
-       (ac-dbname env)
-       `(lambda ,(let ((a args)) (if (null? a) () a))
-          ,@(ac-body* body (append (ac-arglist args) env))))))
+  (if conventional-optional-args
+    (ac-new-fn args body env)
+    (ac-complex-fn args body env)))
 
-; does an fn arg list use optional parameters or destructuring?
-; a rest parameter is not complex
+(define (ac-new-fn params body env)
+  (let* ((ra   (gensym))
+         (non-keyword-args   (gensym))
+         (keyword-alist  (gensym))
+         (optional-alist   (gensym))
+         (params-without-?  (params-without-defaults params))
+         (rest-param  (rest-param params))
+         (z  (ac-getargs-exprs params-without-? non-keyword-args keyword-alist optional-alist)))
+    `(lambda ,ra
+       (let ((,non-keyword-args  (strip-keyword-args ,ra ',rest-param))
+             (,keyword-alist   (keyword-args ,ra ',rest-param))
+             (,optional-alist  ',(optional-params params)))
+         (let* ,z
+           ,@(ac-body* body (append '(,keyword-alist ,optional-alist ,non-keyword-args)
+                                    (ac-complex-getargs z) env)))))))
 
-(define (ac-complex-args? args)
-  (cond ((eqv? args ()) #f)
-        ((symbol? args) #f)
-        ((and (pair? args) (symbol? (car args)))
-         (ac-complex-args? (cdr args)))
-        (#t #t)))
+(define (ac-getargs-exprs params non-keyword-args keyword-alist optional-alist)
+  (map (lambda(param)
+          (list param `(get-arg ',param ',params ,non-keyword-args ,keyword-alist)))
+       (vars-in-paramlist params)))
+
+(define (get-arg var params arglist keyword-alist)
+  (cond
+    ((assoc var keyword-alist)  (alref var keyword-alist))
+    ((null? params)  #f)
+    ((not (pair? params))   (if (equal? params var)
+                              arglist ; rest param
+                              #f))
+    ((assoc (car params) keyword-alist)  (get-arg var (cdr params) arglist keyword-alist))
+    (#t   (or (get-arg var (car params) (ar-xcar arglist) keyword-alist)
+              (get-arg var (cdr params) (ar-xcdr arglist) keyword-alist)))))
+
+(define (keyword-args args rest-param)
+  (cond
+    ((null? args)  '())
+    ((not (pair? args))  '())
+    ((keyword-arg? (car args))  (let ((param (keyword-arg->symbol (car args))))
+                                  (cons (cons param
+                                              (if (equal? param rest-param)
+                                                (cdr args)
+                                                (cadr args)))
+                                        (keyword-args (cddr args) rest-param))))
+    (#t   (keyword-args (cdr args) rest-param))))
+
+(define (rest-param params)
+  (cond
+    ((null? params)  '())
+    ((not (pair? params))   params)
+    (#t   (rest-param (cdr params)))))
+
+(define (optional-params params)
+  (partition-optional-params (extract-optional-params params)))
+
+(define (extract-optional-params params)
+  (strip-required (strip-rest params)))
+
+(define (strip-keyword-args args rest-param)
+  (cond
+    ((null? args)  '())
+    ((keyword-arg? (car args))  (if (equal? (keyword-arg->symbol (car args)) rest-param)
+                                  '()
+                                  (strip-keyword-args (cddr args) rest-param)))
+    (#t   (cons (car args) (strip-keyword-args (cdr args) rest-param)))))
+
+(define (partition-optional-params oparams)
+  (cond
+    ((not (pair? oparams))  '())
+    ((not (pair? (cdr oparams)))  (list oparams))
+    (#t   (cons (cons (car oparams)
+                      (cadr oparams))
+                (partition-optional-params (cddr oparams))))))
+
+(define (strip-required params)
+  (if (pair? params)
+    (let ((optargs (member '? params)))
+      (if optargs
+        (cdr optargs)
+        '()))
+    params))
+
+(define (strip-rest params)
+  (cond
+    ((null? params) '())
+    ((not (pair? params))   '())
+    (#t   (cons (car params)
+                (strip-rest (cdr params))))))
+
+(define (vars-in-paramlist params)
+  (cond
+    ((null? params)  '())
+    ((not (pair? params))   (list params)) ; rest
+    ((equal? (car params) '?)   (vars-in-optional-paramlist (cdr params)))
+    (#t   (append (vars-in-paramlist (car params))
+                  (vars-in-paramlist (cdr params))))))
+
+(define (vars-in-optional-paramlist params)
+  (cond
+    ((null? params)  '())
+    ((not (pair? params))   (list params)) ; rest
+    (#t (cons (car params)
+              (vars-in-optional-paramlist (cddr params)))))) ; skip default
+
+(define (params-without-defaults params)
+  (cond
+    ((null? params)  '())
+    ((not (pair? params))   params) ; rest
+    ((equal? (car params) '?)   (optional-params-without-defaults (cdr params)))
+    (#t   (cons (car params)
+                (params-without-defaults (cdr params))))))
+
+(define (optional-params-without-defaults params)
+  (cond
+    ((null? params)  '())
+    ((not (pair? params))   params) ; rest
+    (#t (cons (car params)
+              (optional-params-without-defaults (cddr params)))))) ; skip default
+
+(define (keyword-arg? sym)
+  (and (symbol? sym)
+       (eq? #\: (string-ref (symbol->string sym) 0))))
+
+(define (keyword-arg->symbol sym)
+  (string->symbol (substring (symbol->string sym) 1)))
+
+(define (alref key alist)
+  (let ((foo (assoc key alist)))
+    (if (pair? foo)
+      (cdr foo)
+      #f)))
+
+
 
 ; translate a fn with optional or destructuring args
 ; (fn (x (o y x) (o z 21) (x1 x2) . rest) ...)
@@ -342,7 +463,7 @@
   (cond ((null? args) ())
         ((symbol? args) (list (list args ra)))
         ((pair? args)
-         (let* ((x (if (and (pair? (car args)) (eqv? (caar args) 'o))
+         (let  ((x (if (and (pair? (car args)) (eqv? (caar args) 'o))
                        (ac-complex-opt (cadar args)
                                        (if (pair? (cddar args))
                                            (caddar args)
@@ -355,10 +476,9 @@
                         (if is-params
                             `(car ,ra)
                             `(ar-xcar ,ra))
-                        #f)))
-                (xa (ac-complex-getargs x)))
+                        #f))))
            (append x (ac-complex-args (cdr args)
-                                      (append xa env)
+                                      (append (ac-complex-getargs x) env)
                                       `(ar-xcdr ,ra)
                                       is-params))))
         (#t (err "Can't understand fn arg list" args))))
@@ -392,6 +512,8 @@
   (if (null? body)
       (list ())
       (ac-body body env)))
+
+
 
 ; (set v1 expr1 v2 expr2 ...)
 

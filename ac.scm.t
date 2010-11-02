@@ -19,9 +19,6 @@
            (display got)
            (newline)))))))
 
-(define (idfn x)
-  x)
-
 ; evaluates expr twice
 (define-syntax test-ac
   (syntax-rules(:valueof :should)
@@ -55,6 +52,167 @@
 
 (define be equal?)
 (xdef be be)
+
+(define (idfn x)
+  x)
+
+
+
+(test-scm "vars-in-paramlist returns simple params"
+  :valueof (vars-in-paramlist '(a b c))
+  :should be '(a b c))
+
+(test-scm "vars-in-paramlist returns varargs param"
+  :valueof (vars-in-paramlist 'a)
+  :should be '(a))
+
+(test-scm "vars-in-paramlist returns rest param"
+  :valueof (vars-in-paramlist '(a b c . d))
+  :should be '(a b c d))
+
+(test-scm "vars-in-paramlist returns optional params"
+  :valueof (vars-in-paramlist '(a ? b 2 c 3 . d))
+  :should be '(a b c d))
+
+(test-scm "keyword-args works"
+  :valueof (keyword-args '(1 2 :a 3) '())
+  :should be '((a . 3)))
+
+(test-scm "keyword-args works with rest args"
+  :valueof (keyword-args '(1 2 :a 3) 'a)
+  :should be '((a 3)))
+
+(test-scm "strip-keyword-args works"
+  :valueof (strip-keyword-args '(1 2 :a 3 4) '())
+  :should be '(1 2 4))
+
+(test-scm "strip-keyword-args works on rest args"
+  :valueof (strip-keyword-args '(1 2 :a 3 4) 'a)
+  :should be '(1 2))
+
+(test-scm "3"
+  :valueof (optional-params 'a)
+  :should be '())
+(test-scm "4"
+  :valueof (optional-params '(a b c))
+  :should be '())
+(test-scm "5"
+  :valueof (optional-params '(a b c ? d e))
+  :should be '((d . e)))
+(test-scm "6"
+  :valueof (optional-params '(a b c ? d e f))
+  :should be '((d . e) (f)))
+(test-scm "7"
+  :valueof (optional-params '(a b c ? d e f nil))
+  :should be '((d . e) (f . nil)))
+(test-scm "8"
+  :valueof (optional-params '(a b c ? d e f nil . g))
+  :should be '((d . e) (f . nil)))
+
+(test-scm "get-arg works for missing arg"
+  :valueof (get-arg 'c 'a 1 ())
+  :should be #f)
+
+(test-scm "get-arg works for required args"
+  :valueof (get-arg 'c '(a b c) '(1 2 3) ())
+  :should be 3)
+
+(test-scm "get-arg works for varargs"
+  :valueof (get-arg 'a 'a '(1 2 3) ())
+  :should be '(1 2 3))
+
+(test-scm "get-arg works for rest args"
+  :valueof (get-arg 'd '(a (b c) . d) '(1 (2 3) 4 5 6) ())
+  :should be '(4 5 6))
+
+(test-scm "get-arg works for destructured args"
+  :valueof (get-arg 'b '(a (b c))
+                       '(1 (2 3)) ())
+  :should be 2)
+
+(test-scm "get-arg works for destructured args - 2"
+  :valueof (get-arg 'f '(a (b c (d e f)))
+                       '(1 (2 3 (4 5 6))) ())
+  :should be 6)
+
+(test-scm "get-arg works for missing destructured args"
+  :valueof (get-arg 'x '(a (b c (d e f)))
+                       '(1 (2 3 (4 5 6))) ())
+  :should be #f)
+
+(test-scm "get-arg works for destructuring and rest args"
+  :valueof (get-arg 'g '(a (b c (d e f) . g))
+                       '(1 (2 3 (4 5 6) 7 8)) ())
+  :should be '(7 8))
+
+(test-scm "get-arg works for destructuring and rest args - 2"
+  :valueof (get-arg 'f '(a (b c (d e f) . g))
+                       '(1 (2 3 (4 5 6) 7 8)) ())
+  :should be 6)
+
+(test-scm "get-arg works for destructuring and rest args - 3"
+  :valueof (get-arg 'x '(a (b c (d e f) . g))
+                       '(1 (2 3 (4 5 6) 7 8)) ())
+  :should be #f)
+
+(test-scm "get-arg works for destructuring and rest args - 3"
+  :valueof (get-arg 'x '(a (b c (d e f) . g))
+                       '(1 (2 3 (4 5 6) 7 8)) ())
+  :should be #f)
+
+(test-scm "get-arg works for destructuring and rest args - 4"
+  :valueof (get-arg 'f '(a (b c (d e . f) . g))
+                       '(1 (2 3 (4 5 6 7) 7 8)) ())
+  :should be '(6 7))
+
+(test-scm "get-arg works for destructuring and rest args - 5"
+  :valueof (get-arg 'f '(a (b c (d e . f) . g))
+                       '(1 (2 3 (4 5) 7 8)) ())
+  :should be '())
+
+(test-scm "get-arg works for keyword args"
+  :valueof (get-arg 'a '(a (b c (d e f) . g))
+                       '((2 3 (4 5 6) 7 8)) '((a . 1)))
+  :should be 1)
+
+(test-scm "get-arg works on args with keywords"
+  :valueof (get-arg 'd '(a (b c (d e f) . g))
+                       '((2 3 (4 5 6) 7 8)) '((a . 1)))
+  :should be 4)
+
+(arc-eval '(assign foo (fn args 34)))
+(test-ac "simple varargs fn"
+  :valueof (foo 1 2 3)
+  :should be 34)
+
+(arc-eval '(assign foo (fn() 34)))
+(test-ac "simple fn"
+  :valueof (foo)
+  :should be 34)
+
+(arc-eval '(assign foo (fn args args)))
+(test-ac "just a rest arg without parens"
+    :valueof (foo 3 4 5)
+    :should be '(3 4 5))
+
+(arc-eval '(assign foo (fn(a . b) b)))
+(test-ac "dotted rest"
+  :valueof (foo 3 4)
+  :should be '(4))
+
+(test-ac "rest args are optional"
+  :valueof (foo 3)
+  :should be ())
+
+(arc-eval '(assign foo (fn((a b)) b)))
+(test-ac "destructured args"
+  :valueof (foo '(3 4))
+  :should be 4)
+
+(arc-eval '(assign foo (fn((a b) . c) b)))
+(test-ac "destructured args + dotted rest"
+  :valueof (foo '(3 4) 5)
+  :should be 4)
 
 
 
