@@ -214,6 +214,98 @@
   :valueof (foo '(3 4) 5)
   :should be 4)
 
+(test-scm "get-arg for missing rest args"
+  :valueof (get-arg 'rest 'rest () ())
+  :should be ())
+
+(test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 1"
+  :valueof (get-arg 'a '(a) () ())
+  :should be #f)
+
+(test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 2"
+  :valueof (get-arg 'e '(a b c e f . d) '(1 2 3) '())
+  :should be #f)
+
+(arc-eval '(assign foo (fn(a ? b ()) (cons a b))))
+(test-ac "optional param"
+  :valueof (foo 3)
+  :should be '(3))
+
+(arc-eval '(assign foo (fn(a ? b 4) (cons a b))))
+(test-ac "optional param with a default"
+  :valueof (foo 3)
+  :should be '(3 . 4))
+
+(test-ac "optional named param"
+  :valueof (foo :a 3)
+  :should be '(3 . 4))
+
+(test-ac "optional arg without naming"
+  :valueof (foo 3 2)
+  :should be '(3 . 2))
+
+(test-ac "named args should override optional params"
+  :valueof (foo 3 :b 2)
+  :should be '(3 . 2))
+
+(test-ac "nil overrides default for optional param without naming"
+  :valueof (foo 3 '())
+  :should be '(3))
+
+(arc-eval '(assign foo (fn(a ? b 4 c ()) (cons b c))))
+(test-ac "multiple optional params"
+  :valueof (foo 3)
+  :should be '(4))
+
+(test-ac "allow optional named args out of order"
+  :valueof (foo 3 :c 2 :b ())
+  :should be '(() . 2))
+
+(arc-eval '(assign foo (fn(a ? b 4 c b) (cons b c))))
+(test-ac "optional params know of previous params"
+  :valueof (foo 3)
+  :should be '(4 . 4))
+
+(test-ac "allow optional args in order without naming"
+  :valueof (foo 3 () 2)
+  :should be '(() . 2))
+
+(test-ac "allow optional args in order without naming"
+  :valueof (foo 3 nil 2)
+  :should be '(() . 2))
+
+(arc-eval '(assign foo (fn(a . b) b)))
+(test-ac "rest args can be named"
+  :valueof (foo 3 :b 4 5)
+  :should be '(4 5))
+
+(arc-eval '(assign foo (fn(a ? b 3 . c) (cons b c))))
+(test-ac "optional + named rest args"
+  :valueof (foo 2 :c 3)
+  :should be '(3 3))
+
+(test-ac "optional + named rest args - 2"
+  :valueof (foo 2 4 :c 3)
+  :should be '(4 3))
+
+(test-ac "optional + named rest args - 3"
+  :valueof (foo 2 :b 4 3)
+  :should be '(4 3))
+
+(arc-eval '(assign foo (fn(a ? b () c 3 . body) (cons b (cons c body)))))
+(test-ac "call with some optional and rest args without naming"
+  :valueof (foo 3 4 :body 4 5)
+  :should be '(4 3 4 5))
+
+(test-ac "call with some named optional and rest args"
+  :valueof (foo 3 :c 4 :body 4 5)
+  :should be '(() 4 4 5))
+
+(arc-eval '(assign foo (fn(a ? b 2 c (fn() (+ 1 b)) . body) (c))))
+(test-ac "defaults compile properly"
+  :valueof (foo 3 :b 4)
+  :should be 5)
+
 
 
 (require "brackets.scm")

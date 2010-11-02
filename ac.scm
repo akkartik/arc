@@ -300,42 +300,36 @@
 
 
 
-(define conventional-optional-args #f)
-
-(define (ac-fn args body env)
-  (if conventional-optional-args
-    (ac-new-fn args body env)
-    (ac-complex-fn args body env)))
-
-(define (ac-new-fn params body env)
+(define (ac-fn params body env)
   (let* ((ra   (gensym))
          (non-keyword-args   (gensym))
          (keyword-alist  (gensym))
-         (optional-alist   (gensym))
+         (optional-alist  (optional-params params))
          (params-without-?  (params-without-defaults params))
          (rest-param  (rest-param params))
-         (z  (ac-getargs-exprs params-without-? non-keyword-args keyword-alist optional-alist)))
+         (z  (ac-getargs-exprs params-without-? non-keyword-args keyword-alist optional-alist env)))
     `(lambda ,ra
        (let ((,non-keyword-args  (strip-keyword-args ,ra ',rest-param))
-             (,keyword-alist   (keyword-args ,ra ',rest-param))
-             (,optional-alist  ',(optional-params params)))
+             (,keyword-alist   (keyword-args ,ra ',rest-param)))
          (let* ,z
-           ,@(ac-body* body (append '(,keyword-alist ,optional-alist ,non-keyword-args)
+           ,@(ac-body* body (append '(,keyword-alist ,non-keyword-args)
                                     (ac-complex-getargs z) env)))))))
 
-(define (ac-getargs-exprs params non-keyword-args keyword-alist optional-alist)
+(define (ac-getargs-exprs params non-keyword-args keyword-alist optional-alist env)
   (map (lambda(param)
-          (list param `(get-arg ',param ',params ,non-keyword-args ,keyword-alist)))
+          (list param
+                `(or (get-arg ',param ',params ,non-keyword-args ,keyword-alist)
+                     ,(ac (alref param optional-alist) (append (prior-params param params) env)))))
        (vars-in-paramlist params)))
 
 (define (get-arg var params arglist keyword-alist)
   (cond
     ((assoc var keyword-alist)  (alref var keyword-alist))
     ((null? params)  #f)
-    ((not (pair? params))   (if (equal? params var)
-                              arglist ; rest param
-                              #f))
+    ((equal? params var)  arglist)
+    ((not (pair? params))   #f)
     ((assoc (car params) keyword-alist)  (get-arg var (cdr params) arglist keyword-alist))
+    ((null? arglist)  #f)
     (#t   (or (get-arg var (car params) (ar-xcar arglist) keyword-alist)
               (get-arg var (cdr params) (ar-xcdr arglist) keyword-alist)))))
 
@@ -409,6 +403,7 @@
     (#t (cons (car params)
               (vars-in-optional-paramlist (cddr params)))))) ; skip default
 
+; like vars-in-paramlist, but don't undot rest args
 (define (params-without-defaults params)
   (cond
     ((null? params)  ())
@@ -424,6 +419,24 @@
     (#t (cons (car params)
               (optional-params-without-defaults (cddr params)))))) ; skip default
 
+; like vars-in-paramlist, but stop at param
+(define (prior-params param params)
+  (cond
+    ((null? params)  ())
+    ((not (pair? params))   (list params)) ; rest
+    ((equal? param (car params))  ())
+    ((equal? (car params) '?)   (prior-optional-params param (cdr params)))
+    (#t   (append (prior-params param (car params))
+                  (prior-params param (cdr params))))))
+
+(define (prior-optional-params param params)
+  (cond
+    ((null? params)  ())
+    ((not (pair? params))   (list params)) ; rest
+    ((equal? param (car params))  ())
+    (#t (cons (car params)
+              (vars-in-optional-paramlist (cddr params)))))) ; skip default
+
 (define (keyword-arg? sym)
   (and (symbol? sym)
        (eq? #\: (string-ref (symbol->string sym) 0))))
@@ -437,71 +450,10 @@
       (cdr foo)
       #f)))
 
-
-
-; translate a fn with optional or destructuring args
-; (fn (x (o y x) (o z 21) (x1 x2) . rest) ...)
-; arguments in top-level list are mandatory (unless optional),
-; but it's OK for parts of a list you're destructuring to
-; be missing.
-
-(define (ac-complex-fn args body env)
-  (let* ((ra (gensym))
-         (z (ac-complex-args args env ra #t)))
-    `(lambda ,ra
-       (let* ,z
-         ,@(ac-body* body (append (ac-complex-getargs z) env))))))
-
-; returns a list of two-element lists, first is variable name,
-; second is (compiled) expression. to be used in a let.
-; caller should extract variables and add to env.
-; ra is the rest argument to the fn.
-; is-params indicates that args are function arguments
-;   (not destructuring), so they must be passed or be optional.
-
-(define (ac-complex-args args env ra is-params)
-  (cond ((null? args) ())
-        ((symbol? args) (list (list args ra)))
-        ((pair? args)
-         (let  ((x (if (and (pair? (car args)) (eqv? (caar args) 'o))
-                       (ac-complex-opt (cadar args)
-                                       (if (pair? (cddar args))
-                                           (caddar args)
-                                           ())
-                                       env
-                                       ra)
-                       (ac-complex-args
-                        (car args)
-                        env
-                        (if is-params
-                            `(car ,ra)
-                            `(ar-xcar ,ra))
-                        #f))))
-           (append x (ac-complex-args (cdr args)
-                                      (append (ac-complex-getargs x) env)
-                                      `(ar-xcdr ,ra)
-                                      is-params))))
-        (#t (err "Can't understand fn arg list" args))))
-
-; (car ra) is the argument
-; so it's not present if ra is nil
-
-(define (ac-complex-opt var expr env ra)
-  (list (list var `(if (pair? ,ra) (car ,ra) ,(ac expr env)))))
-
 ; extract list of variables from list of two-element lists.
 
 (define (ac-complex-getargs a)
   (map (lambda (x) (car x)) a))
-
-; (a b . c) -> (a b c)
-; a -> (a)
-
-(define (ac-arglist a)
-  (cond ((null? a) ())
-        ((symbol? a) (list a))
-        ((symbol? (cdr a)) (list (car a) (cdr a)))
-        (#t (cons (car a) (ac-arglist (cdr a))))))
 
 (define (ac-body body env)
   (map (lambda (x) (ac x env)) body))

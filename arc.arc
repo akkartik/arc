@@ -59,7 +59,7 @@
       nil
       (cons (f (car xs)) (map1 f (cdr xs)))))
 
-(def pair (xs (o f list))
+(def pair (xs ? f list)
   (if (no xs)
        nil
       (no (cdr xs))
@@ -409,7 +409,7 @@
 
 ; Generalization of pair: (tuples x) = (pair x)
 
-(def tuples (xs (o n 2))
+(def tuples (xs ? n 2)
   (if (no xs)
       nil
       (cons (firstn n xs)
@@ -536,7 +536,7 @@
 
 ; (nthcdr x y) = (cut y x).
 
-(def cut (seq start (o end))
+(def cut (seq start ? o end)
   (let end (if (no end)   (len seq)
                (< end 0)  (+ (len seq) end)
                           end)
@@ -596,7 +596,7 @@
          (do1 (car ,g)
               (,setter (cdr ,g)))))))
 
-(def adjoin (x xs (o test iso))
+(def adjoin (x xs ? test iso)
   (if (some [test x _] xs)
       xs
       (cons x xs)))
@@ -621,7 +621,7 @@
                       (rem ,gx ,val)
                       (adjoin ,gx ,val ,@args)))))))
 
-(mac ++ (place (o i 1))
+(mac ++ (place ? i 1)
   (if (isa place 'sym)
       `(= ,place (+ ,place ,i))
       (w/uniq gi
@@ -629,7 +629,7 @@
           `(atwiths ,(+ binds (list gi i))
              (,setter (+ ,val ,gi)))))))
 
-(mac -- (place (o i 1))
+(mac -- (place ? i 1)
   (if (isa place 'sym)
       `(= ,place (- ,place ,i))
       (w/uniq gi
@@ -682,7 +682,7 @@
 
 ; Repeatedly evaluates its body till it returns nil, then returns vals.
 
-(mac drain (expr (o eof nil))
+(mac drain (expr ? eof nil)
   (w/uniq (gacc gdone gres)
     `(with (,gacc nil ,gdone nil)
        (while (no ,gdone)
@@ -750,7 +750,7 @@
 (def find (test seq)
   (some [if (testify.test _) _] seq))
 
-(def recstring (test s (o start 0))
+(def recstring (test s ? start 0)
   ((afn (i)
      (and (< i (len s))
           (or (test i)
@@ -797,12 +797,12 @@
                   (self (car x) (self (cdr x) acc))))
    x nil))
 
-(mac check (x test (o alt))
+(mac check (x test ? alt nil)
   (w/uniq gx
     `(let ,gx ,x
        (if (,test ,gx) ,gx ,alt))))
 
-(def pos (test seq (o start 0))
+(def pos (test seq ? start 0)
   (let f (testify test)
     (if (alist seq)
         ((afn (seq n)
@@ -869,9 +869,10 @@
    `(w/instring ,gv ,str
       (w/stdin ,gv ,@body))))
 
-(def readstring1 (s (o eof nil)) (w/instring i s (read i eof)))
+(def readstring1 (s ? eof nil)
+  (w/instring i s (read i eof)))
 
-(def read ((o x (stdin)) (o eof nil))
+(def read (? x (stdin) eof nil)
   (if (isa x 'string) (readstring1 x eof) (sread x eof)))
 
 ; inconsistency between names of readfile[1] and writefile
@@ -880,7 +881,7 @@
 
 (def readfile1 (name) (w/infile s name (read s)))
 
-(def readall (src (o eof nil))
+(def readall (src ? eof nil)
   ((afn (i)
     (let x (read i eof)
       (if (is x eof)
@@ -903,7 +904,7 @@
 
 (def sym (x) (coerce x 'sym))
 
-(def int (x (o b 10)) (coerce x 'int b))
+(def int (x ? b 10) (coerce x 'int b))
 
 (mac rand-choice exprs
   `(case (rand ,(len exprs))
@@ -1038,7 +1039,7 @@
   (let w (pair withses)
     `((rfn next ,(map car w) ,@body) ,@(map cadr w))))
 
-(def readline ((o s (stdin)))
+(def readline (? s (stdin))
   (aif (readc s)
     (string
      (accum a
@@ -1076,7 +1077,7 @@
 
 ; Could prob be generalized beyond printing.
 
-(def prall (elts (o init "") (o sep ", "))
+(def prall (elts ? init "" sep ", ")
   (when elts
     (pr init (car elts))
     (map [pr sep _] (cdr elts))
@@ -1105,10 +1106,10 @@
       (and (cdr x) (or (atom (cdr x))
                        (dotted (cdr x))))))
 
-(def load-table (file (o eof))
+(def load-table (file ? eof nil)
   (w/infile i file (read-table i eof)))
 
-(def read-table ((o i (stdin)) (o eof))
+(def read-table (? i (stdin) eof nil)
   (let e (read i eof)
     (if (alist e) (listtab e) e)))
 
@@ -1120,7 +1121,7 @@
 (def save-table (h file)
   (writefile (tablist h) file))
 
-(def write-table (h (o o (stdout)))
+(def write-table (h ? o (stdout))
   (write (tablist h) o))
 
 (def copy (x . args)
@@ -1165,7 +1166,7 @@
 
 (def avg (ns) (/ (apply + ns) (len ns)))
 
-(def med (ns (o test >))
+(def med (ns ? test >)
   ((sort test ns) (round (/ (len ns) 2))))
 
 ; Use mergesort on assumption that mostly sorting mostly sorted lists
@@ -1283,7 +1284,7 @@
 
 ; To write something to be read by temread, (write (tablist x))
 
-(def temread (tem (o str (stdin)))
+(def temread (tem ? str (stdin))
   (templatize tem (read str)))
 
 ; Converts alist to inst; ugly; maybe should make this part of coerce.
@@ -1340,10 +1341,10 @@
   (unless (dir-exists path)
     (system (string "mkdir -p " path))))
 
-(def date ((o s (seconds)))
+(def date (? s (seconds))
   (rev (nthcdr 3 (timedate s))))
 
-(def datestring ((o s (seconds)))
+(def datestring (? s (seconds))
   (let (y m d) (date s)
     (string y "-" (if (< m 10) "0") m "-" (if (< d 10) "0") d)))
 
@@ -1353,7 +1354,7 @@
       (if (testf elt) (++ n)))
     n))
 
-(def ellipsize (str (o limit 80))
+(def ellipsize (str ? limit 80)
   (if (<= (len str) limit)
       str
       (+ (cut str 0 limit) "...")))
@@ -1364,7 +1365,7 @@
 (mac until (test . body)
   `(while (no ,test) ,@body))
 
-(def before (x y seq (o i 0))
+(def before (x y seq ? i 0)
   (with (xp (pos x seq i) yp (pos y seq i))
     (and xp (or (no yp) (< xp yp)))))
 
@@ -1432,7 +1433,7 @@
   (and ys (cons (car ys)
                 (mappend [list x _] (cdr ys)))))
 
-(def counts (seq (o c (table)))
+(def counts (seq ? c (table))
   (if (no seq)
       c
       (do (++ (c (car seq) 0))
@@ -1521,7 +1522,7 @@
 (def qlen (q) (rep.q 2))
 (def qlist (q) (car rep.q))
 
-(def enq-limit (val q (o limit 1000))
+(def enq-limit (val q ? limit 1000)
   (atomic
      (unless (< (qlen q) limit)
        (deq q))
@@ -1545,7 +1546,7 @@
 (mac point (name . body)
   (w/uniq (g p)
     `(ccc (fn (,g)
-            (let ,name (fn ((o ,p)) (,g ,p))
+            (let ,name (fn (? ,p nil) (,g ,p))
               ,@body)))))
 
 (mac catch body
@@ -1575,7 +1576,7 @@
       sym    (sym (map upc (coerce x 'string)))
              (err "Can't upcase" x))))
 
-(def inc (x (o n 1))
+(def inc (x ? n 1)
   (coerce (+ (coerce x 'int) n) (type x)))
 
 (def range (start end)
@@ -1704,7 +1705,7 @@
 (mac disktable (var file)
   `(fromdisk ,var ,file (table) load-table save-table))
 
-(mac todisk (var (o expr var))
+(mac todisk (var ? expr var)
   `((savers* ',var)
     ,(if (is var expr) var `(= ,var ,expr))))
 
@@ -1761,7 +1762,7 @@
   `(do (wipe (defined-variables* ',name))
        (ac-set-global ',name nil)))
 
-(mac implicit (name (o val))
+(mac implicit (name ? val nil)
   `(do (defvar ,name ($.make-parameter ,val))
        (mac ,(sym (string "w/" name)) (v . body)
          (w/uniq (param gv gf)
