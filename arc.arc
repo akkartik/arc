@@ -527,16 +527,17 @@
 ; could bind index instead of gensym
 
 (mac each (var expr . body)
-  (w/uniq gv
-    `((afn (,gv)
+  (w/uniq (ga gv)
+    `(iflet ,ga ,expr
+      ((afn (,gv)
         (when (acons ,gv)
           (let ,var (car ,gv) ,@body)
           (self (cdr ,gv))))
-      (coerce ,expr 'cons))))
+        (coerce ,ga 'cons)))))
 
 ; (nthcdr x y) = (cut y x).
 
-(def cut (seq start ? o end)
+(def cut (seq start ? end nil)
   (let end (if (no end)   (len seq)
                (< end 0)  (+ (len seq) end)
                           end)
@@ -1124,27 +1125,10 @@
 (def write-table (h ? o (stdout))
   (write (tablist h) o))
 
-(def copy (x . args)
-  (let x2 (case (type x)
-            sym    x
-            cons   (copylist x) ; (apply (fn args args) x)
-            string (let new (newstring (len x))
-                     (forlen i x
-                       (= (new i) (x i)))
-                     new)
-            table  (let new (table)
-                     (each (k v) x
-                       (= (new k) v))
-                     new)
-                   (err "Can't copy " x))
-    (map (fn ((k v)) (= (x2 k) v))
-         (pair args))
-    x2))
-
-(def copylist (xs)
-  (if (no xs)
-      nil
-      (cons (car xs) (copylist (cdr xs)))))
+(deftransform copy (xs)
+  (if (atom xs)
+      xs
+      (cons (car xs) (copy (cdr xs)))))
 
 (def abs (n)
   (if (< n 0) (- n) n))

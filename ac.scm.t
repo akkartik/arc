@@ -314,7 +314,7 @@
 
 (test-ac "iso works on nil"
   :valueof (iso () ())
-  :should be 't)
+  :should be t)
 
 (test-ac "iso works on nil - 2"
   :valueof (iso () t)
@@ -326,7 +326,7 @@
 
 (test-ac "iso works on tables"
   :valueof (iso (obj 1 2 3 4) (obj 3 4 1 2))
-  :should be 't)
+  :should be t)
 
 (test-ac "iso works on queues"
   :valueof (with (q1 (queue)
@@ -338,7 +338,7 @@
               (enq 3 q1)
               (enq 3 q2)
               (iso q1 q2))
-  :should be 't)
+  :should be t)
 
 (test-ac "len works on nil"
   :valueof (len ())
@@ -358,7 +358,7 @@
 
 (test-ac "some 1 - string"
   :valueof (some (testify #\@) "a@b")
-  :should be 't)
+  :should be t)
 
 (test-ac "some 2"
   :valueof (some (testify #\@) "abc")
@@ -366,7 +366,7 @@
 
 (test-ac "some 3 - list"
   :valueof (some testify.1 '(1 2 3))
-  :should be 't)
+  :should be t)
 
 (test-ac "some 4"
   :valueof (some testify.4 '(1 2 3))
@@ -394,7 +394,7 @@
 
 (test-ac "all 1"
   :valueof (all odd '(1 3 5))
-  :should be 't)
+  :should be t)
 
 (test-ac "all 2"
   :valueof (all odd '(1 2 3))
@@ -402,15 +402,15 @@
 
 (test-ac "all 3 - testify works"
   :valueof (all 1 '(1 1 1))
-  :should be 't)
+  :should be t)
 
 (test-ac "all 4 - empty list"
   :valueof (all 1 '())
-  :should be 't)
+  :should be t)
 
 (test-ac "all 5 - empty string"
   :valueof (all 1 "")
-  :should be 't)
+  :should be t)
 
 (test-ac "rem 1"
   :valueof (rem odd '(1 2 3 4))
@@ -429,3 +429,31 @@
 (test-ac "implicit"
   :valueof (list (w/implicit0 20 (g) implicit0) implicit0)
   :should be '(21 10))
+
+(test-ac "copy works on lists"
+  :valueof (copy '(1 2 3))
+  :should be '(1 2 3))
+
+(test-ac "copy works on ()"
+  :valueof (copy ())
+  :should be ())
+
+(test-ac "copy works on strings"
+  :valueof (copy "abc")
+  :should be "abc")
+
+(test-ac "copy works on tables"
+  :valueof (copy (obj 1 2 3 4))
+  :should be (obj 1 2 3 4))
+
+(test-ac "copy works on tables"
+  :valueof (copy (obj 1 2 3 4))
+  :should be (obj 1 2 3 4))
+
+(test-ac "copy doesn't return the same object"
+  :valueof (let s (obj 1 2 3 4) (is s copy.s))
+  :should be ())
+
+(test-ac "each works on nil"
+  :valueof (each x () x)
+  :should be ())
