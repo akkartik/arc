@@ -197,7 +197,7 @@
   (and (literal val)
        (no (and (is (type val) 'string) (find #\@ val)))))
 
-(def br ((o n 1))
+(def br (? n 1)
   (repeat n (pr "<br>"))
   (prn))
 
@@ -239,7 +239,7 @@
   (gentag p)
   (when args (apply pr args)))
 
-(def menu (name items (o sel nil))
+(def menu (name items ? sel nil)
   (tag (select name name)
     (each i items
       (tag (option selected (is i sel))
@@ -286,10 +286,10 @@
 
 (def cellpr (x) (pr (or x "&nbsp;")))
 
-(def but ((o text "submit") (o name nil))
+(def but (? text "submit" name nil)
   (gentag input type 'submit name name value text))
 
-(def submit ((o val "submit"))
+(def submit (? val "submit")
   (gentag input type 'submit value val))
 
 (def buts (name . texts)
@@ -309,7 +309,7 @@
 (mac textarea (name rows cols . body)
   `(tag (textarea name ,name rows ,rows cols ,cols) ,@body))
 
-(def input (name (o val "") (o size 10))
+(def input (name ? val "" size 10)
   (gentag input type 'text name name value val size size))
 
 (mac inputs args
@@ -329,7 +329,7 @@
                                          value ,text)))))))
             (tuples args 4))))
 
-(def single-input (label name chars btext (o pwd))
+(def single-input (label name chars btext ? pwd nil)
   (pr label)
   (gentag input type (if pwd 'password 'text) name name size chars)
   (sp)
@@ -360,12 +360,12 @@
 
 (def nbsp () (pr "&nbsp;"))
 
-(def link (text (o dest text) (o color))
+(def link (text ? dest text color nil)
   (tag (a href dest)
     (tag-if color (font color color)
       (pr text))))
 
-(def underlink (text (o dest text))
+(def underlink (text ? dest text)
   (tag (a href dest) (tag u (pr text))))
 
 (def striptags (s)

@@ -12,7 +12,7 @@
 
 ; If returns nil, can assume it didn't have to break expr.
 
-(def ppr (expr (o col 0) (o noindent nil))
+(def ppr (expr ? col 0 noindent nil)
   (if (or (atom expr) (dotted expr))
        (do (unless noindent (sp col))
            (write expr)
@@ -57,7 +57,7 @@
             t)
         (do (rpar) t))))
 
-(def pprest (exprs col (o oneline t))
+(def pprest (exprs col ? oneline t)
   (if (and oneline
            (all (fn (e)
                   (or (atom e) (and (is (car e) 'quote) (atom (cadr e)))))
@@ -74,7 +74,7 @@
     (write (car xs))
     (each x (cdr xs) (pr " ") (write x))))
 
-(def sp ((o n 1)) (repeat n (pr " ")))
+(def sp (? n 1) (repeat n (pr " ")))
 (def lpar () (pr "("))
 (def rpar () (pr ")"))
 

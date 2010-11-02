@@ -6,7 +6,7 @@
 
 (= quitsrv* nil breaksrv* nil)
 
-(def serve ((o port 8080))
+(def serve (? port 8080)
   (wipe quitsrv*)
   (ensure-srvdirs)
   (map [apply new-bgthread _] pending-bgthreads*)
@@ -18,7 +18,7 @@
       (handle-request s breaksrv*)))
   (prn "quit server"))
 
-(def serve1 ((o port 8080))
+(def serve1 (? port 8080)
   (w/socket s port (handle-request s t)))
 
 (def ensure-srvdirs ()
@@ -377,7 +377,7 @@ Connection: close"))
 ; do is estimate what the max no of fnids can be and set the harvest
 ; limit there-- beyond that the only solution is to buy more memory.
 
-(def harvest-fnids ((o n 50000))  ; was 20000
+(def harvest-fnids (? n 50000)  ; was 20000
   (when (len> fns* n)
     (pull (fn ((id created lasts))
             (when (> (since created) lasts)
@@ -466,7 +466,7 @@ Connection: close"))
 
 ; f should be a fn of one arg, which will be http request args.
 
-(def fnform (f bodyfn (o redir))
+(def fnform (f bodyfn ? redir nil)
   (tag (form method 'post action (if redir rfnurl2* fnurl*))
     (fnid-field (fnid f))
     (bodyfn)))
@@ -529,7 +529,7 @@ Connection: close"))
 
 (= unique-ids* (table))
 
-(def unique-id ((o len 8))
+(def unique-id (? len 8)
   (let id (sym (rand-string (max 5 len)))
     (if (unique-ids* id)
         (unique-id)
@@ -578,7 +578,7 @@ Connection: close"))
 
 ; eventually promote to general util
 
-(def sortable (ht (o f >))
+(def sortable (ht ? f >)
   (let res nil
     (maptable (fn kv
                 (insort (compare f cadr) kv res))

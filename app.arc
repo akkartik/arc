@@ -11,7 +11,7 @@
    adminfile* "arc/admins"
    cookfile*  "arc/cooks")
 
-(def asv ((o port 8080))
+(def asv (? port 8080)
   (load-userinfo)
   (serve port))
 
@@ -147,7 +147,7 @@
 ; classic example of something that should just "return" a val
 ; via a continuation rather than going to a new page.
 
-(def login-page (switch (o msg nil) (o afterward hello-page))
+(def login-page (switch ? msg nil afterward hello-page)
   (whitepage
     (pagemessage msg)
     (when (in switch 'login 'both)
@@ -197,7 +197,7 @@
 (def prcookie (cook)
   (prn "Set-Cookie: user=" cook "; expires=Sun, 17-Jan-2038 19:14:07 GMT"))
 
-(def pwfields ((o label "login"))
+(def pwfields (? label "login")
   (inputs u username 20 nil
           p password 20 nil)
   (br)
@@ -244,7 +244,7 @@
         choose another."
        nil))
 
-(def goodname (str (o min 1) (o max nil))
+(def goodname (str ? min 1 max nil)
   (and (isa str 'string)
        (>= (len str) min)
        (~find (fn (c) (no (or (alphadig c) (in c #\- #\_))))
@@ -317,14 +317,14 @@
        (gentag input type 'text name id value (if val (english-date val) ""))
        (err "unknown varfield type" typ)))
 
-(def text-rows (text wid (o pad 3))
+(def text-rows (text wid ? pad 3)
   (+ (trunc (/ (len text) (* wid .8))) pad))
 
-(def needrows (text cols (o pad 0))
+(def needrows (text cols ? pad 0)
   (+ pad (max (+ 1 (count #\newline text))
               (roundup (/ (len text) (- cols 5))))))
 
-(def varline (typ id val (o liveurls))
+(def varline (typ id val ? liveurls nil)
   (if (in typ 'users 'syms 'toks 'bigtoks)  (apply prs val)
       (is typ 'lines)                       (map prn val)
       (is typ 'yesno)                       (pr (if val 'yes 'no))
@@ -345,7 +345,7 @@
 ; into a title or comment by editing it.  If want a form that
 ; can take html, just create another typ for it.
 
-(def readvar (typ str (o fail nil))
+(def readvar (typ str ? fail nil)
   (case (carif typ)
     string  (striptags str)
     string1 (if (blank str) fail (striptags str))
@@ -393,7 +393,7 @@
 ; a fn f and generates a form such that when submitted (f label newval)
 ; will be called for each valid value.  Finally done is called.
 
-(def vars-form (user fields f done (o button "update") (o lasts))
+(def vars-form (user fields f done ? button "update" lasts nil)
   (taform lasts
           (if (all [no (_ 4)] fields)
               (fn (req))
@@ -415,7 +415,7 @@
        (br)
        (submit button))))
 
-(def showvars (fields (o liveurls))
+(def showvars (fields ? liveurls nil)
   (each (typ id val view mod question) fields
     (when view
       (when question
@@ -428,10 +428,10 @@
 
 ; http://daringfireball.net/projects/markdown/syntax
 
-(def md-from-form (str (o nolinks))
+(def md-from-form (str ? nolinks nil)
   (markdown (trim (rem #\return (esc-tags str)) 'end) 60 nolinks))
 
-(def markdown (s (o maxurl) (o nolinks))
+(def markdown (s ? maxurl nil nolinks nil)
   (let ital nil
     (tostring
       (forlen i s
@@ -461,7 +461,7 @@
                          (= i (- n 1)))
                        (writec (s i))))))))
 
-(def indented-code (s i (o newlines 0) (o spaces 0))
+(def indented-code (s i ? newlines 0 spaces 0)
   (let c (s i)
     (if (nonwhite c)
          (if (and (> newlines 1) (> spaces 1))
@@ -475,7 +475,7 @@
 
 ; If i is start a paragraph break, returns index of start of next para.
 
-(def parabreak (s i (o newlines 0))
+(def parabreak (s i ? newlines 0)
   (let c (s i)
     (if (or (nonwhite c) (atend i s))
         (if (> newlines 1) i nil)
@@ -489,7 +489,7 @@
          (list i it)
          (next-parabreak s (+ i 1)))))
 
-(def paras (s (o i 0))
+(def paras (s ? i 0)
   (if (atend i s)
       nil
       (iflet (endthis startnext) (next-parabreak s i)
@@ -510,7 +510,7 @@
 ; not followed by whitespace or eos, or (b) a close delimiter
 ; balancing a previous open delimiter.
 
-(def urlend (s i (o indelim))
+(def urlend (s i ? indelim nil)
   (let c (s i)
     (if (atend i s)
          (if ((orf punc whitec opendelim) c)
@@ -580,8 +580,8 @@
                              " am"))))
 
 (def parse-time (s)
-  (let (nums (o label "")) (halve s letter)
-    (with ((h (o m 0)) (map int (tokens nums ~digit))
+  (let (nums ? label "") (halve s letter)
+    (with ((h ? m 0)   (map int (tokens nums ~digit))
            cleanlabel  (downcase (rem ~alphadig label)))
       (+ (* (if (is h 12)
                  (if (in cleanlabel "am" "midnight")

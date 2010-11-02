@@ -7,7 +7,7 @@
 ;> (get-output-string ss)
 ;"\u0085"
 
-(def tokens (s (o sep whitec))
+(def tokens (s ? sep whitec)
   (let test (testify sep)
     (let rec (afn (cs toks tok)
                (if (no cs)         (consif tok toks)
@@ -18,7 +18,7 @@
 
 ; names of cut, split, halve not optimal
 
-(def halve (s (o sep whitec))
+(def halve (s ? sep whitec)
   (let test (testify sep)
     (let rec (afn (cs tok)
                (if (no cs)         (list (rev tok))
@@ -79,7 +79,7 @@
         (if (< i 16) (writec #\0))
         (pr (coerce i 'string 16))))))
 
-(mac litmatch (pat string (o start 0))
+(mac litmatch (pat string ? start 0)
   (w/uniq (gstring gstart)
     `(with (,gstring ,string ,gstart ,start)
        (unless (> (+ ,gstart ,(len pat)) (len ,gstring))
@@ -107,7 +107,7 @@
                            acc))
                   (rev acc)))))))
 
-(def posmatch (pat seq (o start 0))
+(def posmatch (pat seq ? start 0)
   (catch
     (if (isa pat 'fn)
         (for i start (- (len seq) 1)
@@ -116,7 +116,7 @@
           (when (headmatch pat seq i) (throw i))))
     nil))
 
-(def headmatch (pat seq (o start 0))
+(def headmatch (pat seq ? start 0)
   (let p (len pat)
     ((afn (i)
        (or (is i p)
@@ -124,7 +124,7 @@
                 (self (+ i 1)))))
      0)))
 
-(def begins (seq pat (o start 0))
+(def begins (seq pat ? start 0)
   (unless (len> pat (- (len seq) start))
     (headmatch pat seq start)))
 
@@ -147,7 +147,7 @@
 
 ; not a good name
 
-(def findsubseq (pat seq (o start 0))
+(def findsubseq (pat seq ? start 0)
   (if (< (- (len seq) start) (len pat))
        nil
       (if (headmatch pat seq start)
@@ -158,7 +158,7 @@
 
 (def nonblank (s) (unless (blank s) s))
 
-(def trim (s (o where 'both) (o test whitec))
+(def trim (s ? where 'both test whitec)
   (withs (f   (testify test)
            p1 (pos ~f s))
     (if p1
@@ -171,7 +171,7 @@
                  (+ i 1))))
         "")))
 
-(def num (n (o digits 2) (o trail-zeros nil) (o init-zero nil))
+(def num (n ? digits 2 trail-zeros nil init-zero nil)
   (withs (comma
           (fn (i)
             (tostring

@@ -79,7 +79,7 @@
 
 (= initload-users* nil)
 
-(def nsv ((o port 8080))
+(def nsv (? port 8080)
   (map ensure-dir (list arcdir* newsdir* storydir* votedir* profdir*))
   (unless stories* (load-items))
   (if (and initload-users* (empty profs*)) (load-users))
@@ -141,7 +141,7 @@
 
 ; Note that users will now only consider currently loaded users.
 
-(def users ((o f idfn))
+(def users (? f idfn)
   (keep f (keys profs*)))
 
 (def check-key (u k)
@@ -267,7 +267,7 @@
 (= gravity* 1.8 timebase* 120 front-threshold* 1
    nourl-factor* .4 lightweight-factor* .3 )
 
-(def frontpage-rank (s (o scorefn realscore) (o gravity gravity*))
+(def frontpage-rank (s ? scorefn realscore gravity gravity*)
   (* (/ (let base (- (scorefn s) 1)
           (if (> base 0) (expt base .8) base))
         (expt (/ (+ (item-age s) timebase*) 60) gravity))
@@ -316,7 +316,7 @@
 ; With virtual lists the above call to latest-items could be simply:
 ; (map item (retrieve consider metastory:item (gen maxid* [- _ 1])))
 
-(def latest-items (test (o stop) (o n))
+(def latest-items (test ? stop nil n nil)
   (accum a
     (catch
       (down id maxid* 1
@@ -331,7 +331,7 @@
 
 (def metastory (i) (and i (in i!type 'story 'poll)))
 
-(def adjust-rank (s (o scorefn frontpage-rank))
+(def adjust-rank (s ? scorefn frontpage-rank)
   (insortnew (compare > (memo scorefn)) s ranked-stories*)
   (save-topstories))
 
@@ -346,7 +346,7 @@
   (when ranked-stories*
     (adjust-rank (ranked-stories* (rand (min 50 (len ranked-stories*)))))))
 
-(def topstories (user n (o threshold front-threshold*))
+(def topstories (user n ? threshold front-threshold*)
   (retrieve n
             [and (>= (realscore _) threshold) (cansee user _)]
             ranked-stories*))
@@ -457,7 +457,7 @@
      (pagetop nil nil ,label)
      (trtd ,@body)))
 
-(def msgpage (user msg (o title))
+(def msgpage (user msg ? title nil)
   (minipage (or title "Message")
     (spanclass admin
       (center (if (len> msg 80)
@@ -564,7 +564,7 @@ function vote(node) {
        (hex>color it)
        site-color*))
 
-(def pagetop (switch lid label (o title) (o user) (o whence))
+(def pagetop (switch lid label ? title nil user nil whence nil)
 ; (tr (tdcolor black (vspace 5)))
   (tr (tdcolor (main-color user)
         (tag (table border 0 cellpadding 0 cellspacing 0 width "100%"
@@ -614,7 +614,7 @@ function vote(node) {
   (tag-if (is name label) (span class 'topsel)
     (link name dest)))
 
-(def topright (user whence (o showkarma t))
+(def topright (user whence ? showkarma t)
   (when user
     (userlink user user nil)
     (when showkarma (pr  "&nbsp;(@(karma user))"))
@@ -838,7 +838,7 @@ function vote(node) {
 (newscache newspage user 90
   (listpage user (msec) (topstories user maxend*) nil nil "news"))
 
-(def listpage (user t1 items label title (o url label) (o number t))
+(def listpage (user t1 items label title ? url label number t)
   (hook 'listpage user)
   (longpage user t1 nil label title url
     (display-items user items label title url 0 perpage* number)))
@@ -926,7 +926,7 @@ function vote(node) {
 ; Story Display
 
 (def display-items (user items label title whence
-                    (o start 0) (o end perpage*) (o number))
+                    ? start 0 end perpage* number nil)
   (zerotable
     (let n start
       (each i (cut items start end)
@@ -1042,7 +1042,7 @@ function vote(node) {
 
 (= votewid* 14)
 
-(def votelinks (i user whence (o downtoo))
+(def votelinks (i user whence ? downtoo nil)
   (center
     (if (and (cansee user i)
              (or (no user)
@@ -1130,7 +1130,7 @@ function vote(node) {
     (when (news-type i) (itemscore i user))
     (byline i user)))
 
-(def itemscore (i (o user))
+(def itemscore (i ? user nil)
   (tag (span id (+ "score_" i!id))
     (pr (plural (if (is i!type 'pollopt) (realscore i) i!score)
                 "point")))
@@ -1145,7 +1145,7 @@ function vote(node) {
 
 (= show-avg* nil)
 
-(def userlink (user subject (o show-avg t))
+(def userlink (user subject ? show-avg t)
   (link (user-name user subject) (user-url subject))
   (awhen (and show-avg* (admin user) show-avg (uvar subject avg))
     (pr " (@(num it 1 t t))")))
@@ -1251,7 +1251,7 @@ function vote(node) {
 ; site, so that all future submitters will be ignored.  Does not ban
 ; the ip address, but that will eventually get banned by maybe-ban-ip.
 
-(def blastlink (i user whence (o nuke))
+(def blastlink (i user whence ? nuke nil)
   (when (and (admin user)
              (or (no nuke) (~empty i!url)))
     (pr bar*)
@@ -1259,7 +1259,7 @@ function vote(node) {
                  whence)
       (prt (if (ignored i!by) "un-") (if nuke "nuke" "blast")))))
 
-(def toggle-blast (i user (o nuke))
+(def toggle-blast (i user ? nuke nil)
   (atomic
     (if (ignored i!by)
         (do (wipe i!dead (ignored i!by))
@@ -1348,7 +1348,7 @@ function vote(node) {
 ; Actual votes can't be lost because that field is not editable.  Not a
 ; big enough problem to drag in locking.
 
-(def vote-for (user i (o dir 'up))
+(def vote-for (user i ? dir 'up)
   (unless (or ((votes user) i!id)
               (and (~live i) (isnt user i!by)))
     (withs (ip   (logins* user)
@@ -1394,13 +1394,13 @@ function vote(node) {
 
 ; ugly to access vote fields by position number
 
-(def downvote-ratio (user (o sample 20))
+(def downvote-ratio (user ? sample 20)
   (ratio [is _.1.3 'down]
          (keep [let by ((item (car _)) 'by)
                  (nor (is by user) (ignored by))]
                (bestn sample (compare > car:cadr) (tablist (votes user))))))
 
-(def just-downvoted (user victim (o n 3))
+(def just-downvoted (user victim ? n 3)
   (let prev (firstn n (recent-votes-by user))
     (and (is (len prev) n)
          (all (fn ((id sec ip voter dir score))
@@ -1422,14 +1422,14 @@ function vote(node) {
       (submit-page user "" "" t)
       (submit-login-warning "" "" t)))
 
-(def submit-login-warning ((o url) (o title) (o showtext) (o text))
+(def submit-login-warning (? url nil title nil showtext nil text nil)
   (login-page 'both "You have to be logged in to submit."
               (fn (user ip)
                 (ensure-news-user user)
                 (newslog ip user 'submit-login)
                 (submit-page user url title showtext text))))
 
-(def submit-page (user (o url) (o title) (o showtext) (o text "") (o msg))
+(def submit-page (user ? url nil title nil showtext nil text "" msg nil)
   (minipage "Submit"
     (pagemessage msg)
     (urform user req
@@ -1526,7 +1526,7 @@ function vote(node) {
 ; New user can't submit more than 2 stories in a 2 hour period.
 ; Give overeager users the key toofast to make limit permanent.
 
-(def oversubmitting (user ip kind (o url))
+(def oversubmitting (user ip kind ? url nil)
   (and enforce-oversubmit*
        (or (check-key user 'toofast)
            (ignored user)
@@ -1608,11 +1608,11 @@ function vote(node) {
 
 (= comment-kill* nil ip-ban-threshold* 3)
 
-(def set-ip-ban (user ip yesno (o info))
+(def set-ip-ban (user ip yesno ? info nil)
   (= (banned-ips* ip) (and yesno (list user (seconds) info)))
   (todisk banned-ips*))
 
-(def set-site-ban (user site ban (o info))
+(def set-site-ban (user site ban ? info nil)
   (= (banned-sites* site) (and ban (list ban user (seconds) info)))
   (todisk banned-sites*))
 
@@ -1679,7 +1679,7 @@ function vote(node) {
       (newpoll-page user)
       (pr "Sorry, you need @poll-threshold* karma to create a poll.")))
 
-(def newpoll-page (user (o title "Poll: ") (o text "") (o opts "") (o msg))
+(def newpoll-page (user ? title "Poll: " text "" opts "" msg nil)
   (minipage "New Poll"
     (pagemessage msg)
     (urform user req
@@ -1847,7 +1847,7 @@ function vote(node) {
 (= (displayfn* 'pollopt) (fn (n i user here inlist)
                            (display-pollopt n i user here)))
 
-(def display-item (n i user here (o inlist))
+(def display-item (n i user here ? inlist nil)
   ((displayfn* (i 'type)) n i user here inlist))
 
 (def superparent (i)
@@ -1949,14 +1949,14 @@ function vote(node) {
 
 ; Comment Submission
 
-(def comment-login-warning (parent whence (o text))
+(def comment-login-warning (parent whence ? text nil)
   (login-page 'both "You have to be logged in to comment."
               (fn (u ip)
                 (ensure-news-user u)
                 (newslog ip u 'comment-login)
                 (addcomment-page parent u whence text))))
 
-(def addcomment-page (parent user whence (o text) (o msg))
+(def addcomment-page (parent user whence ? text nil msg nil)
   (minipage "Add Comment"
     (pagemessage msg)
     (tab
@@ -1969,7 +1969,7 @@ function vote(node) {
 
 ; Comment forms last for 30 min (- cache time)
 
-(def comment-form (parent user whence (o text))
+(def comment-form (parent user whence ? text nil)
   (tarform 1800
            (fn (req)
              (when-umatch/r user req
@@ -2018,7 +2018,7 @@ function vote(node) {
 
 ; Comment Display
 
-(def display-comment-tree (c user whence (o indent 0) (o initialpar))
+(def display-comment-tree (c user whence ? indent 0 initialpar nil)
   (when (cansee-descendant user c)
     (display-1comment c user whence indent initialpar)
     (display-subcomments c user whence (+ indent 1))))
@@ -2026,12 +2026,11 @@ function vote(node) {
 (def display-1comment (c user whence indent showpar)
   (row (tab (display-comment nil c user whence t indent showpar showpar))))
 
-(def display-subcomments (c user whence (o indent 0))
+(def display-subcomments (c user whence ? indent 0)
   (each k (sort (compare > frontpage-rank:item) c!kids)
     (display-comment-tree (item k) user whence indent)))
 
-(def display-comment (n c user whence (o astree) (o indent 0)
-                                      (o showpar) (o showon))
+(def display-comment (n c user whence ? astree nil indent 0 showpar nil showon nil)
   (tr (display-item-number n)
       (when astree (td (hspace (* indent 40))))
       (tag (td valign 'top) (votelinks c user whence t))
@@ -2135,7 +2134,7 @@ function vote(node) {
   (or (< indent 2)
       (> (item-age c) (expt (- indent 1) reply-decay*))))
 
-(def replylink (i whence (o title 'reply))
+(def replylink (i whence ? title 'reply)
   (link title (+ "reply?id=" i!id "&whence=" (urlencode whence))))
 
 (newsop reply (id whence)
@@ -2179,7 +2178,7 @@ function vote(node) {
       (prn "No such user.")))
 
 (def display-threads (user comments label title whence
-                      (o start 0) (o end threads-perpage*))
+                      ? start 0 end threads-perpage*)
   (tab
     (each c (cut comments start end)
       (display-comment-tree c user whence 0 t))
@@ -2193,10 +2192,10 @@ function vote(node) {
                           (morelink display-threads
                                     comments label title end newend))))))))))
 
-(def submissions (user (o limit))
+(def submissions (user ? limit nil)
   (map item (firstn limit (uvar user submitted))))
 
-(def comments (user (o limit))
+(def comments (user ? limit nil)
   (map item (retrieve limit acomment:item (uvar user submitted))))
 
 (def subcomment (c)
@@ -2295,7 +2294,7 @@ function vote(node) {
   (= (uvar user avg) (comment-score user))
   (save-prof user))
 
-(def rand-user ((o test idfn))
+(def rand-user (? test idfn)
   (evtil (rand-key profs*) test))
 
 ; Ignore the most recent 5 comments since they may still be gaining votes.
@@ -2318,7 +2317,7 @@ function vote(node) {
 (newscache active-page user 600
   (listpage user (msec) (actives user) "active" "Active Threads"))
 
-(def actives (user (o n maxend*) (o consider 2000))
+(def actives (user ? n maxend* consider 2000)
   (visible user (rank-stories n consider (memo active-rank))))
 
 (= active-threshold* 1500)
@@ -2399,7 +2398,7 @@ first asterisk isn't whitespace.
 
 (defopg resetpw req (resetpw-page (get-user req)))
 
-(def resetpw-page (user (o msg))
+(def resetpw-page (user ? msg nil)
   (minipage "Reset Password"
     (if msg
          (pr msg)
@@ -2428,7 +2427,7 @@ first asterisk isn't whitespace.
 ; If have other global alists, generalize an alist edit page.
 ; Or better still generalize vars-form.
 
-(def scrub-page (user rules (o msg nil))
+(def scrub-page (user rules ? msg nil)
   (minipage "Scrubrules"
     (when msg (pr msg) (br2))
     (uform user req

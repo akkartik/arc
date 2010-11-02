@@ -440,10 +440,14 @@
 
 (define (keyword-arg? sym)
   (and (symbol? sym)
-       (eq? #\: (string-ref (symbol->string sym) 0))))
+       (let ((s (symbol->string sym)))
+         (and (not (equal? s ""))
+              (eq? #\: (string-ref s 0))))))
 
 (define (keyword-arg->symbol sym)
-  (string->symbol (substring (symbol->string sym) 1)))
+  (let ((s  (symbol->string sym)))
+    (and (not (equal? s ""))
+         (string->symbol (substring s 1)))))
 
 (define (alref key alist)
   (let ((foo (assoc key alist)))
