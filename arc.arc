@@ -1141,6 +1141,11 @@
          (pair args))
     x2))
 
+(def copylist (xs)
+  (if (no xs)
+      nil
+      (cons (car xs) (copylist (cdr xs)))))
+
 (def abs (n)
   (if (< n 0) (- n) n))
 

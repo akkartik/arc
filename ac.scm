@@ -36,6 +36,7 @@
         ((keyword-arg? s) (list 'quote s))
         ((literal? s) s)
         ((eqv? s 'nil) ())
+        ((equal? s '(quote nil)) ())
         ((ssyntax? s) (ac (expand-ssyntax s) env))
         ((symbol? s) (ac-var-ref s env))
         ((ssyntax? (xcar s)) (ac (cons (expand-ssyntax (car s)) (cdr s)) env))
@@ -1021,8 +1022,7 @@
                            (err "Can't coerce " x 'num))))
             (int    ,(lambda (x) x)))
 
-   (cons    (string ,(lambda (x) (string->list x)))
-            (()     ,(lambda (x) ())))
+   (cons    (string ,(lambda (x) (string->list x))))
 
    (char    (int    ,ascii->char)
             (num    ,(lambda (x) (ascii->char (iround x)))))))
