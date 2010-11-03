@@ -31,4 +31,4 @@ Case can work on lists and other compounds
 2. Optional args have a new syntax. (a (o b) (o c 3)) => (a ? b nil c 3)
 3. some and keep don't testify.
 4. Always handle null values when defining a generic
-5. get rid of setuid in srv; assume arc is running behind apache or nginx
+5. srv no longer calls setuid. Run it behind apache or nginx, never as root.

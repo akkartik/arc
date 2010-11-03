@@ -1,9 +1,5 @@
 To run News:
 
-tar xvf arc3.1.tar
-
-cd arc3.1
-
 mkdir arc
 
 echo "myname" > arc/admins
