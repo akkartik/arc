@@ -453,7 +453,7 @@
   (let ((foo (assoc key alist)))
     (if (pair? foo)
       (cdr foo)
-      #f)))
+      ())))
 
 ; extract list of variables from list of two-element lists.
 
