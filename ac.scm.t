@@ -90,22 +90,22 @@
   :valueof (strip-keyword-args '(1 2 :a 3 4) 'a)
   :should be '(1 2))
 
-(test-scm "3"
+(test-scm "optional-params works - 1"
   :valueof (optional-params 'a)
   :should be '())
-(test-scm "4"
+(test-scm "optional-params 1"
   :valueof (optional-params '(a b c))
   :should be '())
-(test-scm "5"
+(test-scm "optional-params 2"
   :valueof (optional-params '(a b c ? d e))
   :should be '((d . e)))
-(test-scm "6"
+(test-scm "optional-params 3"
   :valueof (optional-params '(a b c ? d e f))
   :should be '((d . e) (f)))
-(test-scm "7"
+(test-scm "optional-params 4"
   :valueof (optional-params '(a b c ? d e f nil))
   :should be '((d . e) (f . nil)))
-(test-scm "8"
+(test-scm "optional-params 5"
   :valueof (optional-params '(a b c ? d e f nil . g))
   :should be '((d . e) (f . nil)))
 
@@ -155,11 +155,6 @@
                        '(1 (2 3 (4 5 6) 7 8)) ())
   :should be #f)
 
-(test-scm "get-arg works for destructuring and rest args - 3"
-  :valueof (get-arg 'x '(a (b c (d e f) . g))
-                       '(1 (2 3 (4 5 6) 7 8)) ())
-  :should be #f)
-
 (test-scm "get-arg works for destructuring and rest args - 4"
   :valueof (get-arg 'f '(a (b c (d e . f) . g))
                        '(1 (2 3 (4 5 6 7) 7 8)) ())
@@ -179,6 +174,8 @@
   :valueof (get-arg 'd '(a (b c (d e f) . g))
                        '((2 3 (4 5 6) 7 8)) '((a . 1)))
   :should be 4)
+
+
 
 (arc-eval '(assign foo (fn args 34)))
 (test-ac "simple varargs fn"
