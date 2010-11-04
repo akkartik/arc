@@ -23,7 +23,11 @@ srv:
   allow nested paths to be accessed inside arc/static
   more mime-types, more html attributes, more useful logging
 
-Bugfixes (http://arclanguage.org/item?id=10830, each on tables returns nil)
+Bugfixes:
+  http://arclanguage.org/item?id=10830
+  http://arclanguage.org/item?id=10793
+  each on tables returns nil
+
 Case can work on lists and other compounds
 
 - Incompatibilities and gotchas
