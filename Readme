@@ -20,7 +20,7 @@ new arglist syntax. (a b ? c d . e) => c, d are optional, e is a rest/body arg.
 
 srv:
   parse IP from X-Forwarded-For
-  allow nested paths to be accessed inside arc/static
+  access static subdirectories
   more mime-types, more html attributes, more useful logging
 
 Bugfixes:
