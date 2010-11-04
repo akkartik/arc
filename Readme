@@ -24,9 +24,9 @@ srv:
   more mime-types, more html attributes, more useful logging
 
 Bugfixes:
-  http://arclanguage.org/item?id=10830
-  http://arclanguage.org/item?id=10793
-  each on tables returns nil
+  readline handles empty lines: http://awwx.ws/readline, http://arclanguage.org/item?id=10830
+  downcase/upcase on nil return nil: http://arclanguage.org/item?id=10793
+  each over tables returns nil
 
 Case can work on lists and other compounds
 
