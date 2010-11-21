@@ -2,7 +2,7 @@
 
 ; To improve performance with static files, set static-max-age*.
 
-(= arcdir* "arc/" logdir* "arc/logs/" staticdir* "static/")
+(= arcdir* "www/" logdir* "www/logs/" staticdir* "www/static/")
 
 (= quitsrv* nil breaksrv* nil)
 
