@@ -1253,22 +1253,6 @@
                   (x-set-cdr! x val))
               val))
 
-; decide at run-time whether the underlying mzscheme supports
-; set-car! and set-cdr!, since I can't figure out how to do it
-; at compile time.
-
-(define (x-set-car! p v)
-  (let ((fn (namespace-variable-value 'set-car! #t (lambda () #f))))
-    (if (procedure? fn)
-        (fn p v)
-        (n-set-car! p v))))
-
-(define (x-set-cdr! p v)
-  (let ((fn (namespace-variable-value 'set-cdr! #t (lambda () #f))))
-    (if (procedure? fn)
-        (fn p v)
-        (n-set-cdr! p v))))
-
 ; Eli's code to modify mzscheme-4's immutable pairs.
 
 ;; to avoid a malloc on every call, reuse a single pointer, but make
@@ -1289,6 +1273,18 @@
 
 (define (n-set-car! p x) (set-ca/dr! 1 'set-car! p x))
 (define (n-set-cdr! p x) (set-ca/dr! 2 'set-cdr! p x))
+
+(define x-set-car!
+  (let ((fn (namespace-variable-value 'set-car! #t (lambda () #f))))
+    (if (procedure? fn)
+        fn
+        n-set-car!)))
+
+(define x-set-cdr!
+  (let ((fn (namespace-variable-value 'set-cdr! #t (lambda () #f))))
+    (if (procedure? fn)
+        fn
+        n-set-cdr!)))
 
 ; When and if cdr of a string returned an actual (eq) tail, could
 ; say (if (string? x) (string-replace! x val 1) ...) in scdr, but
