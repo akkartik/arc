@@ -1,11 +1,16 @@
-(= new-thread $.thread)
+(= threads* nil)
+(def new-thread(name f)
+  (let newt ($.thread f)
+    (push (list name newt) threads*)
+    newt))
+
+(mac thread (name . body)
+  `(new-thread ,name (fn () ,@body)))
+
 (= kill-thread $.kill-thread)
 (= break-thread $.break-thread)
 (= current-thread $.current-thread)
 (def dead(th) ($:tnil (thread-dead? th)))
-
-(mac thread body
-  `(new-thread (fn () ,@body)))
 
 (= ccc $.call-with-current-continuation)
 
