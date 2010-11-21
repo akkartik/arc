@@ -308,6 +308,7 @@
 (require "brackets.scm")
 (use-bracket-readtable)
 (aload "arc.arc")
+(aload "libs.arc")
 
 (test-ac "iso works on nil"
   :valueof (iso () ())
@@ -454,3 +455,51 @@
 (test-ac "each works on nil"
   :valueof (each x () x)
   :should be ())
+
+(test-ac "serialize works on nil"
+  :valueof (serialize ())
+  :should be ())
+
+(test-ac "serialize works on lists"
+  :valueof (serialize '(1 2 3))
+  :should be '(1 2 3))
+
+(test-ac "serialize works on strings"
+  :valueof (serialize "abc")
+  :should be "abc")
+
+(test-ac "serialize works on tables"
+  :valueof (serialize (obj 1 2 3 4))
+  :should be '(table ((3 4) (1 2))))
+
+(test-ac "unserialize complements serialize for nil"
+  :valueof (unserialize:serialize ())
+  :should be ())
+
+(test-ac "unserialize complements serialize for lists"
+  :valueof (unserialize:serialize '(1 2 3))
+  :should be '(1 2 3))
+
+(test-ac "unserialize complements serialize for strings"
+  :valueof (unserialize:serialize "abc")
+  :should be "abc")
+
+(test-ac "unserialize complements serialize for tables"
+  :valueof (unserialize:serialize (obj 1 2 3 4))
+  :should be (obj 1 2 3 4))
+
+(test-ac "serialize operates on tables inside lists"
+  :valueof (serialize `(1 ,(table) 2 3))
+  :should be '(1 (table ()) 2 3))
+
+(test-ac "unserialize complements serialize for tables inside lists"
+  :valueof (unserialize:serialize `(1 ,(table) 2 3))
+  :should be `(1 ,(table) 2 3))
+
+(test-ac "serialize operates on nested tables"
+  :valueof (serialize (obj 1 (table) 2 3))
+  :should be '(table ((2 3) (1 (table ())))))
+
+(test-ac "unserialize complements serialize for nested tables"
+  :valueof (unserialize:serialize (obj 1 (table) 2 3))
+  :should be (obj 1 (table) 2 3))

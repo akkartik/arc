@@ -1651,6 +1651,8 @@
 (defmethod len (x) queue
   (qlen x))
 
+
+
 (def set-coercer (to from fun)
   (let cnv (or coerce*.to (= coerce*.to (table)))
     (= cnv.from fun)))
@@ -1671,6 +1673,49 @@
 
 (defcoerce cons queue (q)
   (qlist q))
+
+
+
+(defgeneric serialize(x)
+  x)
+
+(defmethod serialize(x) string
+  x)
+
+(defmethod serialize(x) cons
+  (map serialize x))
+
+(defmethod serialize(x) table
+  (list 'table
+    (accum a
+      (maptable (fn (k v)
+                  (a (list k serialize.v)))
+                x))))
+
+; can't use defgeneric; everything is likely a list when serialized
+(or= vtables*!unserialize (table))
+(def unserialize(x)
+  (aif (vtables*!unserialize type*.x)   (it x)
+    (acons x)   (map unserialize x)
+                x))
+
+(def type*(x)
+  (if (and (pair? x)
+           (isa car.x 'sym))
+    car.x
+    type.x))
+
+(def pair?(l)
+  (and (acons l)
+       (acons:cdr l)
+       (~acons:cddr l)))
+
+(defmethod unserialize(x) table
+  (w/table h
+    (map (fn ((k v)) (= h.k unserialize.v))
+         cadr.x)))
+
+
 
 (= hooks* (table))
 

@@ -18,6 +18,9 @@ some, all, mem, trues, keep, rem, len, iso are now all generic.
 pervasive keyword args. If a function's args are (a b c), (:c 3 1 2) => (1 2 3), etc.
 new arglist syntax. (a b ? c d . e) => c, d are optional, e is a rest/body arg.
 
+transparent persistence using persisted, which can be extended for new
+datatypes by supporting the generics serialize and unserialize.
+
 srv:
   parse IP from X-Forwarded-For
   access static subdirectories
@@ -36,3 +39,4 @@ Case can work on lists and other compounds
 3. some and keep don't testify.
 4. Always handle null values when defining a generic
 5. srv no longer calls setuid. Run it behind apache or nginx, never as root.
+6. thread and new-thread require docstrings, like in autosave-thread in state.arc.
