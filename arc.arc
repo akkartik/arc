@@ -406,6 +406,12 @@
 
 (mac = args
   (expand=list args))
+(= const =)
+(= redef =)
+
+(mac init args
+  `(unless (bound ',(car args))
+     (= ,@args)))
 
 ; Generalization of pair: (tuples x) = (pair x)
 
@@ -1379,6 +1385,7 @@
   (is 0 (mod x y)))
 
 (mac nor args `(no (or ,@args)))
+(= neither nor)
 
 ; Consider making the default sort fn take compare's two args (when do
 ; you ever have to sort mere lists of numbers?) and rename current sort
@@ -1621,6 +1628,7 @@
            (acons y)
            (iso car.x car.y)
            (iso cdr.x cdr.y))))
+(= be iso)
 
 (defmethod iso (x y) table
   (and (isa x 'table)
