@@ -290,6 +290,21 @@
                   (self (map1 cdr seqs)))))
        seqs)))
 
+; http://arclanguage.org/item?id=12878
+(def accumulate (comb f xs init next done)
+  ((afn (xs total)
+     (if (done xs)
+         total
+         (self (next xs) (comb (f xs) total))))
+   xs init))
+
+(def rev (xs)
+  (accumulate cons car xs nil cdr no))
+(def map1 (f xs)
+  (rev:accumulate cons f:car xs nil cdr no))
+(def mapn (f a b)
+  (rev:accumulate cons f a nil inc [> _ b]))
+
 (def mappend (f . args)
   (apply + nil (apply map f args)))
 
@@ -437,7 +452,7 @@
 
 (def expand=list (terms)
   `(do ,@(map (fn ((p v)) (expand= p v))  ; [apply expand= _]
-                  (pair terms))))
+              (pair terms))))
 
 (mac = args
   (expand=list args))
@@ -528,13 +543,6 @@
       (assoc key (cdr al))))
 
 (def alref (al key) (cadr (assoc key al)))
-
-(def rev (xs)
-  ((afn (xs acc)
-     (if (no xs)
-         acc
-         (self (cdr xs) (cons (car xs) acc))))
-   xs nil))
 
 (mac unless (test . body)
   `(if (no ,test) (do ,@body)))
@@ -1131,10 +1139,15 @@
          ,@body)
        ,gc)))
 
-(def sum (f xs)
-  (let n 0
-    (each x xs (++ n (f x)))
-    n))
+;(def sum (f xs)
+;  (let n 0
+;    (each x xs (++ n (f x)))
+;    n))
+(def sum (f a b)
+  (accumulate + f a 0 inc [> _ b]))
+
+(def sumlist (f xs)
+  (accumulate + f:car xs 0 cdr no))
 
 (def treewise (f base tree)
   (if (atom tree)
@@ -1653,6 +1666,8 @@
 (def inc (x ? n 1)
   (coerce (+ (coerce x 'int) n) (type x)))
 
+;(def range (a b)
+;  (rev:accumulate cons idfn a nil inc [> _ b]))
 (def range (start end)
   (if (> start end)
       nil
@@ -1717,6 +1732,8 @@
            (iso y.k v))
          tablist.x)))
 
+;(def len (xs)
+;  (accumulate + [idfn 1] xs 0 cdr no))
 (defgeneric len (x)
   ($.length x))
 

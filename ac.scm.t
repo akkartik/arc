@@ -515,3 +515,11 @@
 (test-ac "count-up works"
   :valueof (count-up '(1 2 3 3 2))
   :should be '(2 2 3 2 1 1))
+
+(test-ac "map works"
+  :valueof (map [+ 1 _] '(1 2 3))
+  :should be '(2 3 4))
+
+(test-ac "map works on multiple lists"
+  :valueof (map * '(1 2 3) '(1 2 3 4))
+  :should be '(1 4 9))
