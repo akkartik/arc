@@ -503,3 +503,15 @@
 (test-ac "unserialize complements serialize for nested tables"
   :valueof (unserialize:serialize (obj 1 (table) 2 3))
   :should be (obj 1 (table) 2 3))
+
+(test-ac "freq works"
+  :valueof (freq '(1 2 3 2 1))
+  :should be (obj 1 2 2 2 3 1))
+
+(test-ac "freq works on strings"
+  :valueof (freq "abracadabra")
+  :should be (obj #\a 5 #\b 2 #\c 1 #\d 1))
+
+(test-ac "count-up works"
+  :valueof (count-up '(1 2 3 3 2))
+  :should be '(2 2 3 2 1 1))

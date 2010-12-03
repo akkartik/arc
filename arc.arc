@@ -75,6 +75,38 @@
 (mac thunk body
   `(fn() ,@body))
 
+(mac ifcall(var)
+  `(when (bound ',var)
+     (,var)))
+
+(mac pushif(elem ls)
+  `(aif ,elem
+     (push it ,ls)))
+
+(mac firsttime(place . body)
+  `(unless ,place
+     ,@body
+     (set ,place)))
+
+(mac proc(name args . body)
+  `(def ,name ,args ,@body nil))
+
+(mac ret(var val . body)
+ `(let ,var ,val ,@body ,var))
+
+(mac awhile(expr . body)
+  `(whilet it ,expr
+    ,@body))
+
+(mac forever body
+  `(while t ,@body))
+
+(mac disabled body
+  `(when nil ,@body))
+
+(mac enabled body
+  `(when t ,@body))
+
 
 
 (mac with (parms . body)
@@ -415,6 +447,11 @@
 (mac init args
   `(unless (bound ',(car args))
      (= ,@args)))
+
+(mac letloop(var init term inc . body)
+  `(let ,var nil
+     (loop (= ,var ,init) ,term ,inc
+        ,@body)))
 
 ; Generalization of pair: (tuples x) = (pair x)
 
@@ -1469,15 +1506,16 @@
   (and ys (cons (car ys)
                 (mappend [list x _] (cdr ys)))))
 
-(def counts (seq ? c (table))
-  (if (no seq)
-      c
-      (do (++ (c (car seq) 0))
-          (counts (cdr seq) c))))
+(defgeneric freq (seq)
+  (ret ans (table)
+    (each elem seq
+      (++ (ans elem 0)))))
+
+(= count-up sortable:freq)
 
 (def commonest (seq)
   (with (winner nil n 0)
-    (each (k v) (counts seq)
+    (each (k v) (freq seq)
       (when (> v n) (= winner k n v)))
     (list winner n)))
 
