@@ -72,6 +72,9 @@
                 `(do (sref sig ',parms ',name)
                      (safeset ,name (annotate 'mac (fn ,parms ,@body)))))))
 
+(mac thunk body
+  `(fn() ,@body))
+
 
 
 (mac with (parms . body)
@@ -797,6 +800,9 @@
 (def string args
   (apply + "" (map [coerce _ 'string] args)))
 
+(mac as (type x)
+  `(coerce ,x ',type))
+
 (def flat x
   ((afn (x acc)
      (if (no x)   acc
@@ -875,6 +881,25 @@
   (w/uniq gv
    `(w/instring ,gv ,str
       (w/stdin ,gv ,@body))))
+
+; http://arclanguage.org/item?id=12877
+(mac fromfile (f . body)
+  (w/uniq gf
+    `(w/infile ,gf ,f
+       (w/stdin ,gf
+         ,@body))))
+
+(mac tofile (f . body)
+  (w/uniq gf
+    `(w/outfile ,gf ,f
+       (w/stdout ,gf
+         ,@body))))
+
+(mac ontofile (f . body)
+  (w/uniq gf
+    `(w/appendfile ,gf ,f
+       (w/stdout ,gf
+         ,@body))))
 
 (def readstring1 (s ? eof nil)
   (w/instring i s (read i eof)))
@@ -1092,6 +1117,21 @@
 
 (def prs args
   (prall args "" #\space))
+
+(def prsn args (apply prs args) (prn))
+
+(def pad (x wanted-len ? side 'left pad-char #\space)
+  (zap string x)
+  (let padding (newstring (- wanted-len len.x) pad-char)
+    (case side
+      left (string padding x)
+      right (string x padding))))
+
+(def grid (xses (o strict nil)) ;dense lines of code for brevity
+  (let lens (map [best > (map (fn (xs) (len:string:car:nthcdr _ xs)) xses)]
+                 (range 0 (dec:best > (map len xses))))
+    (when strict (let u (best > lens) (= lens (n-of len.lens u))))
+    (each xs xses (apply prsn (map pad xs lens)))))
 
 (def tree-subst (old new tree)
   (if (is tree old)
