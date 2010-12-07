@@ -291,19 +291,20 @@
        seqs)))
 
 ; http://arclanguage.org/item?id=12878
-(def accumulate (comb f xs init next done)
+; using until because macro hasn't been defined yet
+(def accumulate (over ? starting nil taking car folding-with cons next cdr until no)
   ((afn (xs total)
-     (if (done xs)
+     (if (until xs)
          total
-         (self (next xs) (comb (f xs) total))))
-   xs init))
+         (self (next xs) (folding-with (taking xs) total))))
+   over starting))
 
 (def rev (xs)
-  (accumulate cons car xs nil cdr no))
+  (accumulate xs))
 (def map1 (f xs)
-  (rev:accumulate cons f:car xs nil cdr no))
+  (rev:accumulate :over xs :taking f:car))
 (def mapn (f a b)
-  (rev:accumulate cons f a nil inc [> _ b]))
+  (rev:accumulate :over a :taking f :next inc :until [> _ b]))
 
 (def mappend (f . args)
   (apply + nil (apply map f args)))
@@ -1134,20 +1135,20 @@
 
 (mac summing (sumfn . body)
   (w/uniq (gc gt)
-    `(let ,gc 0
+    `(ret ,gc 0
        (let ,sumfn (fn (,gt) (if ,gt (++ ,gc)))
-         ,@body)
-       ,gc)))
+         ,@body))))
 
-;(def sum (f xs)
-;  (let n 0
-;    (each x xs (++ n (f x)))
-;    n))
-(def sum (f a b)
-  (accumulate + f a 0 inc [> _ b]))
+(def sum (f xs)
+  (ret n 0
+    (each x xs
+      (++ n f.x))))
+
+(def sumn (f a b)
+  (accumulate :over a :starting 0 :taking f :folding-with + :next inc :until [> _ b]))
 
 (def sumlist (f xs)
-  (accumulate + f:car xs 0 cdr no))
+  (accumulate :over xs :starting 0 :taking f:car :folding-with +))
 
 (def treewise (f base tree)
   (if (atom tree)

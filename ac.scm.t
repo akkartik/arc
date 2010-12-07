@@ -523,3 +523,27 @@
 (test-ac "map works on multiple lists"
   :valueof (map * '(1 2 3) '(1 2 3 4))
   :should be '(1 4 9))
+
+(test-ac "rev works"
+  :valueof (rev '(1 2 (4 5)))
+  :should be '((4 5) 2 1))
+
+(test-ac "sumlist works"
+  :valueof (sumlist len '("abc" "de" "f"))
+  :should be 6)
+
+(test-ac "map1 works"
+  :valueof (map len '("abc" "de" "f"))
+  :should be '(3 2 1))
+
+(test-ac "mapn works"
+  :valueof (mapn idfn 1 10)
+  :should be (range 1 10))
+
+(test-ac "sum works"
+  :valueof (sum len '("abc" "de" "f"))
+  :should be 6)
+
+(test-ac "sumn works"
+  :valueof (sumn idfn 0 4)
+  :should be 10)
