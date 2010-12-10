@@ -551,3 +551,52 @@
 (test-ac "sumn works"
   :valueof (sumn idfn 0 4)
   :should be 10)
+
+(test-ac "firsttime works"
+  :valueof (ret counter 0
+             (let lock nil
+               (firsttime lock
+                  ++.counter)
+               (firsttime lock
+                  ++.counter)))
+  :should be 1)
+
+(test-ac "updating doesn't update unnecessarily"
+  :valueof (ret counter 0
+             (let a 0
+               (updating a 0
+                  :body
+                    ++.counter)))
+  :should be 0)
+
+(test-ac "updating updates when necessary"
+  :valueof (ret counter 0
+             (let a 0
+               (updating a 1
+                  :body
+                    ++.counter)))
+  :should be 1)
+
+(test-ac "updating works with condition"
+  :valueof (ret counter 0
+             (let a 0
+               (updating a :unless >= 1
+                  :body
+                    ++.counter)
+               (updating a :unless >= 1
+                  :body
+                    ++.counter)
+               (updating a :unless >= 3
+                  :body
+                    ++.counter)
+               (updating a :unless >= 2
+                  :body
+                    ++.counter)))
+    :should be 2)
+
+(test-ac "updating doesn't evaluate unnecessarily"
+  :valueof (ret counter 0
+             (with (getindex (fn() ++.counter 0)
+                    l   '(4))
+               (updating (l (getindex)) 1)))
+    :should be 1)
