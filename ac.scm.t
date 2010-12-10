@@ -25,7 +25,7 @@
     ((test msg :valueof expr :should predicate args ...)
      (let ((got (arc-eval 'expr))
            (ans (arc-eval '(predicate expr args ...))))
-       (if ans
+       (if (ac-false? ans)
          (begin
            (display ". ")
            (display msg)
@@ -55,6 +55,10 @@
 
 (define (idfn x)
   x)
+
+(define (ac-false? x)
+  (or (not x)
+      (not (eq? x ()))))
 
 
 
@@ -510,11 +514,11 @@
 
 (test-ac "freq works on strings"
   :valueof (freq "abracadabra")
-  :should be (obj #\a 5 #\b 2 #\c 1 #\d 1))
+  :should be (obj #\a 5 #\b 2 #\c 1 #\d 1 #\r 2))
 
 (test-ac "count-up works"
   :valueof (count-up '(1 2 3 3 2))
-  :should be '(2 2 3 2 1 1))
+  :should be '((3 2) (2 2) (1 1)))
 
 (test-ac "map works"
   :valueof (map [+ 1 _] '(1 2 3))
