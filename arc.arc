@@ -1581,6 +1581,11 @@
       (whiler e (read f eof) eof
         (eval e)))))
 
+; l!foo => (load "foo.arc")
+; use this only at the repl; too cryptic otherwise.
+(def l(f)
+  (load:+ string.f ".arc"))
+
 (def positive (x)
   (and (number x) (> x 0)))
 
