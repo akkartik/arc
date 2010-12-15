@@ -126,8 +126,8 @@
 
 (mac w/uniq (names . body)
   (if (acons names)
-      `(with ,(apply join (map1 (fn (n) (list n '(uniq)))
-                                names))
+      `(with ,(apply + nil (map1 (fn (n) (list n '(uniq)))
+                             names))
          ,@body)
       `(let ,names (uniq) ,@body)))
 
@@ -210,13 +210,12 @@
 ; Rtm prefers to overload + to do this
 
 (def join args
-  (if
-    (no args)   nil
-    ($.string? car.args)  (apply $.string-append (map1 [coerce _ 'string] args))
-        (let a (car args)
-          (if (no a)
-              (apply join (cdr args))
-              (cons (car a) (apply join (cdr a) (cdr args)))))))
+  (if (no args)
+      nil
+      (let a (car args)
+        (if (no a)
+            (apply join (cdr args))
+            (cons (car a) (apply join (cdr a) (cdr args)))))))
 
 ; bootstrapping version; overloaded later as a generic function
 (def iso (x y)
@@ -306,7 +305,7 @@
   (rev:accumulate :over a :taking f :next inc :until [> _ b]))
 
 (def mappend (f . args)
-  (apply join (apply map f args)))
+  (apply + nil (apply map f args)))
 
 (def firstn (n xs)
   (if (no n)            xs
@@ -322,7 +321,7 @@
   (and (acons x) (is (car x) val)))
 
 (def warn (msg . args)
-  (disp (join "Warning: " msg ". "))
+  (disp (+ "Warning: " msg ". "))
   (map [do (write _) (disp " ")] args)
   (disp #\newline))
 
@@ -420,8 +419,8 @@
                            expr0 expr))
                    (w/uniq (g h)
                      (let argsyms (map [uniq] (cdr expr))
-                        (list (join (list g (car expr))
-                                    (mappend list argsyms (cdr expr)))
+                        (list (+ (list g (car expr))
+                                 (mappend list argsyms (cdr expr)))
                               `(,g ,@argsyms)
                               `(fn (,h) (sref ,g ,h ,(car argsyms))))))))))))
 
@@ -447,7 +446,7 @@
       `(assign ,place ,val)
       (let (vars prev setter) (setforms place)
         (w/uniq g
-          `(atwith ,(join vars (list g val))
+          `(atwith ,(+ vars (list g val))
              (,setter ,g))))))
 
 (def expand=list (terms)
@@ -638,7 +637,7 @@
   (w/uniq (g1 g2)
     (with ((binds1 val1 setter1) (setforms place1)
            (binds2 val2 setter2) (setforms place2))
-      `(atwiths ,(join binds1 (list g1 val1) binds2 (list g2 val2))
+      `(atwiths ,(+ binds1 (list g1 val1) binds2 (list g2 val2))
          (,setter1 ,g2)
          (,setter2 ,g1)))))
 
@@ -646,18 +645,18 @@
   (with (vars (map [uniq] places)
          forms (map setforms places))
     `(atwiths ,(mappend (fn (g (binds val setter))
-                          (join binds (list g val)))
+                          (+ binds (list g val)))
                         vars
                         forms)
        ,@(map (fn (g (binds val setter))
                 (list setter g))
-              (join (cdr vars) (list (car vars)))
+              (+ (cdr vars) (list (car vars)))
               forms))))
 
 (mac pop (place)
   (w/uniq g
     (let (binds val setter) (setforms place)
-      `(atwiths ,(join binds (list g val))
+      `(atwiths ,(+ binds (list g val))
          (do1 (car ,g)
               (,setter (cdr ,g)))))))
 
@@ -669,19 +668,19 @@
 (mac pushnew (x place . args)
   (w/uniq gx
     (let (binds val setter) (setforms place)
-      `(atwiths ,(join (list gx x) binds)
+      `(atwiths ,(+ (list gx x) binds)
          (,setter (adjoin ,gx ,val ,@args))))))
 
 (mac pull (test place)
   (w/uniq g
     (let (binds val setter) (setforms place)
-      `(atwiths ,(join (list g test) binds)
+      `(atwiths ,(+ (list g test) binds)
          (,setter (rem ,g ,val))))))
 
 (mac togglemem (x place . args)
   (w/uniq gx
     (let (binds val setter) (setforms place)
-      `(atwiths ,(join (list gx x) binds)
+      `(atwiths ,(+ (list gx x) binds)
          (,setter (if (mem ,gx ,val)
                       (rem ,gx ,val)
                       (adjoin ,gx ,val ,@args)))))))
@@ -691,7 +690,7 @@
       `(= ,place (+ ,place ,i))
       (w/uniq gi
         (let (binds val setter) (setforms place)
-          `(atwiths ,(join binds (list gi i))
+          `(atwiths ,(+ binds (list gi i))
              (,setter (+ ,val ,gi)))))))
 
 (mac -- (place ? i 1)
@@ -699,7 +698,7 @@
       `(= ,place (- ,place ,i))
       (w/uniq gi
         (let (binds val setter) (setforms place)
-          `(atwiths ,(join binds (list gi i))
+          `(atwiths ,(+ binds (list gi i))
              (,setter (- ,val ,gi)))))))
 
 ; E.g. (++ x) equiv to (zap + x 1)
@@ -710,10 +709,10 @@
          mix    (afn seqs
                   (if (some no seqs)
                       nil
-                      (join (map car seqs)
-                            (apply self (map cdr seqs))))))
+                      (+ (map car seqs)
+                         (apply self (map cdr seqs))))))
     (let (binds val setter) (setforms place)
-      `(atwiths ,(join binds (list gop op) (mix gargs args))
+      `(atwiths ,(+ binds (list gop op) (mix gargs args))
          (,setter (,gop ,val ,@gargs))))))
 
 ; Can't simply mod pr to print strings represented as lists of chars,
@@ -853,7 +852,7 @@
 (def consif (x y) (if x (cons x y) y))
 
 (def string args
-  (apply join (map [coerce _ 'string] args)))
+  (apply + "" (map [coerce _ 'string] args)))
 
 (mac as (type x)
   `(coerce ,x ',type))
@@ -984,7 +983,7 @@
   (w/infile s name (allchars s)))
 
 (def writefile (val file)
-  (let tmpfile (join file ".tmp")
+  (let tmpfile (+ file ".tmp")
     (w/outfile o tmpfile (write val o))
     (mvfile tmpfile file))
   val)
@@ -1350,8 +1349,7 @@
   `(time (repeat 10 ,expr)))
 
 (def union (f xs ys)
-  (join xs
-        (rem (fn (y) (some [f _ y] xs))
+  (+ xs (rem (fn (y) (some [f _ y] xs))
              ys)))
 
 (= templates* (table))
@@ -1359,9 +1357,9 @@
 (mac deftem (tem . fields)
   (withs (name (carif tem) includes (if (acons tem) (cdr tem)))
     `(= (templates* ',name)
-        (join (mappend templates* ',(rev includes))
-              (list ,@(map (fn ((k v)) `(list ',k (fn () ,v)))
-                           (pair fields)))))))
+        (+ (mappend templates* ',(rev includes))
+           (list ,@(map (fn ((k v)) `(list ',k (fn () ,v)))
+                        (pair fields)))))))
 
 (mac addtem (name . fields)
   `(= (templates* ',name)
@@ -1453,7 +1451,7 @@
 (def ellipsize (str ? limit 80)
   (if (<= (len str) limit)
       str
-      (join (cut str 0 limit) "...")))
+      (+ (cut str 0 limit) "...")))
 
 (def rand-elt (seq)
   (seq (rand (len seq))))
@@ -1586,7 +1584,7 @@
 ; l!foo => (load "foo.arc")
 ; use this only at the repl; too cryptic otherwise.
 (def l(f)
-  (load:join string.f ".arc"))
+  (load:+ string.f ".arc"))
 
 (def positive (x)
   (and (number x) (> x 0)))

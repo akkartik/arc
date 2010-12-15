@@ -191,19 +191,19 @@
                          m (/ (roundup (* a d)) d)
                          i (trunc m)
                          r (abs (trunc (- (* m d) (* i d)))))
-                   (join (if (is i 0)
-                           (if (or init-zero (is r 0)) "0" "")
-                           (comma i))
-                         (withs (rest   (string r)
-                                 padded (join (newstring (- digits (len rest)) #\0)
-                                              rest)
-                                 final  (if trail-zeros
-                                          padded
-                                          (trim padded 'end [is _ #\0])))
-                           (string (unless (empty final) ".")
-                                   final)))))))
+                   (+ (if (is i 0)
+                          (if (or init-zero (is r 0)) "0" "")
+                          (comma i))
+                      (withs (rest   (string r)
+                              padded (+ (newstring (- digits (len rest)) #\0)
+                                        rest)
+                              final  (if trail-zeros
+                                         padded
+                                         (trim padded 'end [is _ #\0])))
+                        (string (unless (empty final) ".")
+                                final)))))))
     (if (and (< n 0) (find [and (digit _) (isnt _ #\0)] abrep))
-        (join "-" abrep)
+        (+ "-" abrep)
         abrep)))
 
 
