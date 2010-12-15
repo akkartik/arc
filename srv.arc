@@ -175,7 +175,7 @@ Connection: close")
 (= type-header* (table))
 
 (def gen-type-header (ctype)
-  (+ "HTTP/1.0 200 OK
+  (join "HTTP/1.0 200 OK
 Content-Type: "
      ctype
      "

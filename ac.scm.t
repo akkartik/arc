@@ -600,3 +600,7 @@
                     l   '(4))
                (updating (l (getindex)) 1)))
     :should be 1)
+
+(test-ac "num works"
+  :valueof (num 34.4 4 t t)
+  :should be "34.4000")
