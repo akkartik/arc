@@ -462,6 +462,12 @@
   `(unless (bound ',(car args))
      (= ,@args)))
 
+; Like =, but f continues to get updates to g.
+; http://arclanguage.org/item?id=13085
+(mac define(f g)
+  `(= ,f (fn args
+           (apply ,g args))))
+
 (mac letloop(var init term inc . body)
   `(let ,var nil
      (loop (= ,var ,init) ,term ,inc
@@ -1735,7 +1741,7 @@
            (acons y)
            (iso car.x car.y)
            (iso cdr.x cdr.y))))
-(= be iso)
+(define be iso)
 
 (defmethod iso (x y) table
   (and (isa x 'table)
