@@ -108,6 +108,9 @@
 (mac enabled body
   `(when t ,@body))
 
+(def l(file)
+  (load:+ (string file) ".arc"))
+
 
 
 (mac with (parms . body)
