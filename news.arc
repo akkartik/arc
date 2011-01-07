@@ -708,10 +708,10 @@ function vote(node) {
                (nad-fields)
                (fn (name val)
                  (case name
-                   caching            (= caching* val)
-                   comment-kill       (todisk comment-kill* val)
-                   comment-ignore     (todisk comment-ignore* val)
-                   lightweights       (todisk lightweights* (memtable val))
+                   'caching            (= caching* val)
+                   'comment-kill       (todisk comment-kill* val)
+                   'comment-ignore     (todisk comment-ignore* val)
+                   'lightweights       (todisk lightweights* (memtable val))
                    ))
                (fn () (newsadmin-page user)))
     (br2)
@@ -995,14 +995,14 @@ function vote(node) {
                     (w/rlink (do (set-site-ban user
                                                it
                                                (case (car (banned-sites* it))
-                                                 nil    'ignore
-                                                 ignore 'kill
-                                                 kill   nil))
+                                                 nil     'ignore
+                                                 'ignore 'kill
+                                                 'kill   nil))
                                  whence)
                       (let ban (car (banned-sites* it))
                         (tag-if ban (font color (case ban
-                                                  ignore darkred
-                                                  kill   darkblue))
+                                                  'ignore darkred
+                                                  'kill   darkblue))
                           (pr it))))
                     (pr it))
                 (pr ") "))))
@@ -1366,7 +1366,7 @@ function vote(node) {
                        (find [is (cadr _) ip] i!votes))
                   (and (isnt i!type 'pollopt)
                        (biased-voter i vote)))
-        (++ i!score (case dir up 1 down -1))
+        (++ i!score (case dir 'up 1 'down -1))
         ; canvote protects against sockpuppet downvote of comments
         (when (and (is dir 'up) (possible-sockpuppet user))
           (++ i!sockvotes))
@@ -1374,7 +1374,7 @@ function vote(node) {
         (unless (or (author user i)
                     (and (is ip i!ip) (~editor user))
                     (is i!type 'pollopt))
-          (++ (karma i!by) (case dir up 1 down -1))
+          (++ (karma i!by) (case dir 'up 1 'down -1))
           (save-prof i!by))
         (wipe (comment-cache* i!id)))
       (if (admin user) (pushnew 'nokill i!keys))
@@ -1943,8 +1943,8 @@ function vote(node) {
       (hook 'edit user i))))
 
 (def ignore-edit (user i name val)
-  (case name title (len> val title-limit*)
-             dead  (and (mem 'nokill i!keys) (~admin user))))
+  (case name 'title (len> val title-limit*)
+             'dead  (and (mem 'nokill i!keys) (~admin user))))
 
 
 ; Comment Submission
@@ -2472,9 +2472,9 @@ first asterisk isn't whitespace.
             (td (w/rlink (do (set-site-ban user site nil) "badsites")
                   (fontcolor (if ban gray.220 black) (pr "x"))))
             (td (w/rlink (do (set-site-ban user site 'kill) "badsites")
-                  (fontcolor (case ban kill darkred gray.220) (pr "x"))))
+                  (fontcolor (case ban 'kill darkred gray.220) (pr "x"))))
             (td (w/rlink (do (set-site-ban user site 'ignore) "badsites")
-                  (fontcolor (case ban ignore darkred gray.220) (pr "x"))))
+                  (fontcolor (case ban 'ignore darkred gray.220) (pr "x"))))
             (td (each u (dedup (map !by deads))
                   (userlink user u nil)
                   (pr " "))))))))

@@ -136,9 +136,9 @@
   (let t1 (msec)
     (let arg-wrapper (wrapper args (zap [+ _ car.params] args))
       (case type
-        get  (respond o op args cooks ip)
-        post (handle-post i o op arg-wrapper n cooks ip)
-             (respond-err o "Unknown request: " ip " " type)))
+        'get  (respond o op args cooks ip)
+        'post (handle-post i o op arg-wrapper n cooks ip)
+              (respond-err o "Unknown request: " ip " " type)))
     (log-request type op args cooks ip t0 t1)))
 
 (def log-request (type op args cooks ip t0 t1)

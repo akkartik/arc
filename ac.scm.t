@@ -600,3 +600,22 @@
                     l   '(4))
                (updating (l (getindex)) 1)))
     :should be 1)
+
+(test-ac "new case semantics"
+  :valueof (with (x 1
+                  y 2
+                  z 3
+                  w 2)
+             (case w
+               x 34
+               y 35
+               z 36))
+  :should be 35)
+
+(test-ac "rand-choice should run without errors"
+  :valueof (with (a 3
+                  b 4)
+             (rand-choice
+               (+ a b)
+               (* a b)))
+  :should satisfy idfn)

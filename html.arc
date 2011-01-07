@@ -166,9 +166,9 @@
 
 (def literal (x)
   (case (type x)
-    sym   (in x nil t)
-    cons  (caris x 'quote)
-          t))
+    'sym   (in x nil t)
+    'cons  (caris x 'quote)
+           t))
 
 ; Returns a list whose elements are either strings, which can
 ; simply be printed out, or expressions, which when evaluated

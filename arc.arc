@@ -243,7 +243,7 @@
   (let ex (afn (args)
             (if (no (cdr args))
                 (car args)
-                `(if (iso ,var ',(car args))
+                `(if (iso ,var ,(car args))
                      ,(cadr args)
                      ,(self (cddr args)))))
     `(let ,var ,expr ,(ex args))))
@@ -531,10 +531,10 @@
           ,(with (last-coercer `(apply ,name (transform-last [coerce _ 'cons] ,allargs))
                   all-coercer `(apply ,name (map [coerce _ 'cons] ,allargs)))
              (case (list coerce-all coerce-back)
-               (nil nil)  last-coercer
-               (t nil)  all-coercer
-               (nil t)    `(coerce ,last-coercer (type (last ,allargs)))
-               (t t)  `(coerce ,all-coercer (type (last ,allargs))))))))))
+               '(nil nil)  last-coercer
+               '(t nil)  all-coercer
+               '(nil t)    `(coerce ,last-coercer (type (last ,allargs)))
+               '(t t)  `(coerce ,all-coercer (type (last ,allargs))))))))))
 
 (mac defgeneric (name args . body)
   `(genericexpander nil nil ,name ,args ,@body))
@@ -1189,8 +1189,8 @@
   (zap string x)
   (let padding (newstring (- wanted-len len.x) pad-char)
     (case side
-      left (string padding x)
-      right (string x padding))))
+      'left (string padding x)
+      'right (string x padding))))
 
 (def grid (xses (o strict nil)) ;dense lines of code for brevity
   (let lens (map [best > (map (fn (xs) (len:string:car:nthcdr _ xs)) xses)]
@@ -1666,10 +1666,10 @@
                      (coerce (+ n 32) 'char)
                      c)))
     (case (type x)
-      string (map downc x)
-      char   (downc x)
-      sym    (sym (map downc (coerce x 'string)))
-             (err "Can't downcase" x))))
+      'string (map downc x)
+      'char   (downc x)
+      'sym    (sym (map downc (coerce x 'string)))
+              (err "Can't downcase" x))))
 
 (def upcase (x)
   (let upc (fn (c)
@@ -1678,10 +1678,10 @@
                    (coerce (- n 32) 'char)
                    c)))
     (case (type x)
-      string (map upc x)
-      char   (upc x)
-      sym    (sym (map upc (coerce x 'string)))
-             (err "Can't upcase" x))))
+      'string (map upc x)
+      'char   (upc x)
+      'sym    (sym (map upc (coerce x 'string)))
+              (err "Can't upcase" x))))
 
 (def inc (x ? n 1)
   (coerce (+ (coerce x 'int) n) (type x)))
