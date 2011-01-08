@@ -612,6 +612,13 @@
                z 36))
   :should be 35)
 
+(test-ac "case uses testify"
+  :valueof (let x 3
+             (case x
+               odd 34
+               even 36))
+  :should be 34)
+
 (test-ac "rand-choice should run without errors"
   :valueof (with (a 3
                   b 4)
