@@ -9,7 +9,7 @@
           (pushnew ',var persisted-vars*))))
 
 (const autosave-interval* 300) ; seconds
-(def autosave-thread()
+(def autosave-thread ()
   (thread "autosave" ; for persisted vars
     (while t
       (each var persisted-vars*

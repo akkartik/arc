@@ -317,7 +317,7 @@
                                     (ac-complex-getargs z) env)))))))
 
 (define (ac-getargs-exprs params non-keyword-args keyword-alist optional-alist env)
-  (map (lambda(param)
+  (map (lambda (param)
           (list param
                 `(or (get-arg ',param ',params ,non-keyword-args ,keyword-alist)
                      ,(ac (alref param optional-alist) (append (prior-params param params) env)))))

@@ -79,23 +79,23 @@
   `(if (no ,test) (do ,@body)))
 
 (mac thunk body
-  `(fn() ,@body))
+  `(fn () ,@body))
 
-(mac ifcall(var)
+(mac ifcall (var)
   `(when (bound ',var)
      (,var)))
 
-(mac pushif(elem ls)
+(mac pushif (elem ls)
   `(aif ,elem
      (push it ,ls)))
 
-(mac proc(name args . body)
+(mac proc (name args . body)
   `(def ,name ,args ,@body nil))
 
-(mac ret(var val . body)
+(mac ret (var val . body)
  `(let ,var ,val ,@body ,var))
 
-(mac awhile(expr . body)
+(mac awhile (expr . body)
   `(whilet it ,expr
     ,@body))
 
@@ -108,7 +108,7 @@
 (mac enabled body
   `(when t ,@body))
 
-(def l(file)
+(def l (file)
   (load:+ (string file) ".arc"))
 
 
@@ -470,11 +470,11 @@
 
 ; Like =, but f continues to get updates to g.
 ; http://arclanguage.org/item?id=13085
-(mac alias(f g)
+(mac alias (f g)
   `(= ,f (fn args
            (apply ,g args))))
 
-(mac letloop(var init term inc . body)
+(mac letloop (var init term inc . body)
   `(let ,var nil
      (loop (= ,var ,init) ,term ,inc
         ,@body)))
@@ -487,7 +487,7 @@
          (,setter ,rhs)
          ,@body))))
 
-(mac firsttime(place . body)
+(mac firsttime (place . body)
   `(updating ,place
       :body
         ,@body))
@@ -518,7 +518,7 @@
     (list:f car.xs)))
 
 (= vtables* (table))
-(mac genericexpander(coerce-all coerce-back
+(mac genericexpander (coerce-all coerce-back
                      name args . body)
   (w/uniq (allargs basefn)
     `(do
@@ -1592,7 +1592,7 @@
 
 ; l!foo => (load "foo.arc")
 ; use this only at the repl; too cryptic otherwise.
-(def l(f)
+(def l (f)
   (load:+ string.f ".arc"))
 
 (def positive (x)
@@ -1751,7 +1751,7 @@
        (isa y 'table)
        (is (len keys.x) (len keys.y))
        (all
-         (fn((k v))
+         (fn ((k v))
            (iso y.k v))
          tablist.x)))
 
@@ -1794,16 +1794,16 @@
 
 
 
-(defgeneric serialize(x)
+(defgeneric serialize (x)
   x)
 
-(defmethod serialize(x) string
+(defmethod serialize (x) string
   x)
 
-(defmethod serialize(x) cons
+(defmethod serialize (x) cons
   (map serialize x))
 
-(defmethod serialize(x) table
+(defmethod serialize (x) table
   (list 'table
     (accum a
       (maptable (fn (k v)
@@ -1812,23 +1812,23 @@
 
 ; can't use defgeneric; everything is likely a list when serialized
 (or= vtables*!unserialize (table))
-(def unserialize(x)
+(def unserialize (x)
   (aif (vtables*!unserialize type*.x)   (it x)
     (acons x)   (map unserialize x)
                 x))
 
-(def type*(x)
+(def type* (x)
   (if (and (pair? x)
            (isa car.x 'sym))
     car.x
     type.x))
 
-(def pair?(l)
+(def pair? (l)
   (and (acons l)
        (acons:cdr l)
        (~acons:cddr l)))
 
-(defmethod unserialize(x) table
+(defmethod unserialize (x) table
   (w/table h
     (map (fn ((k v)) (= h.k unserialize.v))
          cadr.x)))
@@ -1906,7 +1906,7 @@
        nil)))
 
 (= defined-variables* (table))
-(def ac-defined-var?(name)
+(def ac-defined-var? (name)
   (if defined-variables*.name scheme-t scheme-f))
 
 (mac defvar (name impl)

@@ -1,5 +1,5 @@
 (= threads* nil)
-(def new-thread(name f)
+(def new-thread (name f)
   (let newt ($.thread f)
     (push (list name newt) threads*)
     newt))
@@ -10,7 +10,7 @@
 (= kill-thread $.kill-thread)
 (= break-thread $.break-thread)
 (= current-thread $.current-thread)
-(def dead(th) ($:tnil (thread-dead? th)))
+(def dead (th) ($:tnil (thread-dead? th)))
 
 (= ccc $.call-with-current-continuation)
 

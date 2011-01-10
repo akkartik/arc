@@ -26,7 +26,7 @@
 
 (= srv-noisy* nil)
 
-(mac wrapper(var . body)
+(mac wrapper (var . body)
   `(fn params (if params (do ,@body) ,var)))
 
 ; http requests currently capped at 2 meg by socket-accept
@@ -100,9 +100,9 @@
               (enq now (req-times* ip))))))
 
 (let proxy-header "X-Forwarded-For: "
-  (def strip-header(s)
+  (def strip-header (s)
     (subst "" proxy-header s))
-  (def proxy-ip(ip-wrapper lines)
+  (def proxy-ip (ip-wrapper lines)
     (aif (only.strip-header (car:keep [headmatch proxy-header _] lines))
         (ip-wrapper it)
         (ip-wrapper))))
@@ -126,7 +126,7 @@
       (close i o)))
   (harvest-fnids))
 
-(def handle-request-2(lines i o ip-wrapper t0)
+(def handle-request-2 (lines i o ip-wrapper t0)
   (let (type op args n cooks) (parseheader (rev lines))
     (if show-requests* (prn lines))
     (unless (abusive-ip (proxy-ip ip-wrapper lines))
