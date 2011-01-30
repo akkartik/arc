@@ -479,9 +479,9 @@
      (loop (= ,var ,init) ,term ,inc
         ,@body)))
 
-(mac updating (place ? expr t unless 'iso . body)
+(mac updating (place ? with t unless 'iso . body)
   (with ((binds val setter) setforms.place
-         rhs expr)
+         rhs with)
     `(withs ,binds
        (unless (,unless ,val ,rhs)
          (,setter ,rhs)
