@@ -1195,7 +1195,7 @@
       'left (string padding x)
       'right (string x padding))))
 
-(def grid (xses (o strict nil)) ;dense lines of code for brevity
+(def grid (xses ? strict nil) ;dense lines of code for brevity
   (let lens (map [best > (map (fn (xs) (len:string:car:nthcdr _ xs)) xses)]
                  (range 0 (dec:best > (map len xses))))
     (when strict (let u (best > lens) (= lens (n-of len.lens u))))
@@ -1637,9 +1637,6 @@
      (unless (< (qlen q) limit)
        (deq q))
      (enq val q)))
-
-(def median (ns)
-  ((sort > ns) (trunc (/ (len ns) 2))))
 
 (mac noisy-each (n var val . body)
   (w/uniq (gn gc)
