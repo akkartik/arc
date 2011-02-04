@@ -424,6 +424,7 @@
 (define (prior-params param params)
   (cond
     ((null? params)  ())
+    ((equal? param params)  ()) ; rest
     ((not (pair? params))   (list params)) ; rest
     ((equal? param (car params))  ())
     ((equal? (car params) '?)   (prior-optional-params param (cdr params)))
@@ -433,10 +434,11 @@
 (define (prior-optional-params param params)
   (cond
     ((null? params)  ())
+    ((equal? param params)  ()) ; rest
     ((not (pair? params))   (list params)) ; rest
     ((equal? param (car params))  ())
     (#t (cons (car params)
-              (vars-in-optional-paramlist (cddr params)))))) ; skip default
+              (prior-optional-params param (cddr params)))))) ; skip default
 
 (define (keyword-arg? sym)
   (and (symbol? sym)
