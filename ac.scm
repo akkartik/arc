@@ -1253,26 +1253,19 @@
                   (x-set-cdr! x val))
               val))
 
-; Eli's code to modify mzscheme-4's immutable pairs.
+; waterhouse's code to modify mzscheme-4's immutable pairs.
+; http://arclanguage.org/item?id=13616
+(require racket/unsafe/ops)
 
-;; to avoid a malloc on every call, reuse a single pointer, but make
-;; it thread-local to avoid races
-(define ptr (make-thread-cell #f))
-(define (get-ptr)
-  (or (thread-cell-ref ptr)
-      (let ([p (malloc _scheme 1)]) (thread-cell-set! ptr p) p)))
-
-;; set a pointer to the cons cell, then dereference it as a pointer,
-;; and bang the new value in the given offset
 (define (set-ca/dr! offset who p x)
   (if (pair? p)
-    (let ([p* (get-ptr)])
-      (ptr-set! p* _scheme p)
-      (ptr-set! (ptr-ref p* _pointer 0) _scheme offset x))
-    (raise-type-error who "pair" p)))
+      (unsafe-vector-set! p offset x)
+      (raise-type-error who "pair" p)))
 
-(define (n-set-car! p x) (set-ca/dr! 1 'set-car! p x))
-(define (n-set-cdr! p x) (set-ca/dr! 2 'set-cdr! p x))
+(define (n-set-car! p x)
+  (set-ca/dr! -1 'set-car! p x))
+(define (n-set-cdr! p x)
+  (set-ca/dr! 0 'set-cdr! p x))
 
 (define x-set-car!
   (let ((fn (namespace-variable-value 'set-car! #t (lambda () #f))))
