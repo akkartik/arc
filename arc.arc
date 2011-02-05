@@ -997,7 +997,7 @@
     (mvfile tmpfile file))
   val)
 
-(def sym (x) (coerce x 'sym))
+(def sym (x) (if x (coerce x 'sym)))
 
 (def int (x ? b 10) (coerce x 'int b))
 
@@ -1549,6 +1549,8 @@
     (each (k v) (freq seq)
       (when (> v n) (= winner k n v)))
     (list winner n)))
+
+;HERE
 
 (def reduce (f xs)
   (if (cddr xs)

@@ -314,6 +314,10 @@
 (aload "arc.arc")
 (aload "libs.arc")
 
+(test-ac "sym.nil works"
+  :valueof sym.nil
+  :should be nil)
+
 (test-ac "iso works on nil"
   :valueof (iso () ())
   :should be t)
