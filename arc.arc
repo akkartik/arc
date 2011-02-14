@@ -149,20 +149,21 @@
 
 ; Destructuring means ambiguity: are pat vars bound in else? (no)
 
-(mac iflet (var expr then . rest)
-  (w/uniq gv
-    `(let ,gv ,expr
-       (if ,gv (let ,var ,gv ,then) ,@rest))))
+(mac iflet (var expr . branches)
+  (if branches
+    (w/uniq gv
+      `(let ,gv ,expr
+         (if ,gv
+           (let ,var ,gv
+             ,(car branches))
+           (iflet ,var ,@(cdr branches)))))
+    expr))
 
 (mac whenlet (var expr . body)
   `(iflet ,var ,expr (do ,@body)))
 
-(mac aif (expr . body)
-  `(let it ,expr
-     (if it
-         ,@(if (cddr body)
-               `(,(car body) (aif ,@(cdr body)))
-               body))))
+(mac aif (expr . branches)
+  `(iflet it ,expr ,@branches))
 
 (mac awhen (expr . body)
   `(let it ,expr (if it (do ,@body))))

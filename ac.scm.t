@@ -638,3 +638,55 @@
                  (updating max :with elem :unless >=
                    (++ counter max)))))
   :should be 10)
+
+(test-ac "if works with no then"
+  :valueof (if 34)
+  :should be 34)
+
+(test-ac "if recognizes keyword else"
+  :valueof (if nil 35 :else 36)
+  :should be 36)
+
+(test-ac "iflet works"
+  :valueof (iflet a 34 a 253)
+  :should be 34)
+
+(test-ac "iflet works - 2"
+  :valueof (iflet a nil a 253)
+  :should be 253)
+
+(test-ac "iflet works with no then"
+  :valueof (iflet a 34)
+  :should be 34)
+
+(test-ac "iflet works with nil then"
+  :valueof (iflet a nil nil 34 35)
+  :should be 35)
+
+(test-ac "iflet binds multiple conditions"
+  :valueof (iflet a nil 34
+                    35  (+ 1 a))
+  :should be 36)
+
+(test-ac "iflet destructures"
+  :valueof (iflet (a b)
+              '(3 4)  42)
+  :should be 42)
+
+(test-ac "iflet destructures - 2"
+  :valueof (iflet (a b)
+              nil   34
+              '(4 5) (cons a b))
+  :should be '(4 . 5))
+
+(test-ac "aif works with no then"
+  :valueof (aif 34)
+  :should be 34)
+
+(test-ac "aif works with nil then"
+  :valueof (aif nil nil 34 35)
+  :should be 35)
+
+(test-ac "aif works with nil then - 2"
+  :valueof (aif t nil)
+  :should be nil)
