@@ -690,3 +690,34 @@
 (test-ac "aif works with nil then - 2"
   :valueof (aif t nil)
   :should be nil)
+
+(test-ac "markdown passes text through"
+  :valueof (markdown "abc def") :should be "abc def")
+
+(test-ac "markdown linkifies urls"
+  :valueof (markdown "http://foo.com")
+  :should be "<a href=\"http://foo.com\" rel=\"nofollow\">http://foo.com</a>")
+
+(test-ac "markdown linkifies SSL urls"
+  :valueof (markdown "https://foo.com")
+  :should be "<a href=\"https://foo.com\" rel=\"nofollow\">https://foo.com</a>")
+
+(test-ac "markdown can suppress linkification"
+  :valueof (markdown "http://foo.com" nil t)
+  :should be "http://foo.com")
+
+(test-ac "markdown can trim long urls for display"
+  :valueof (markdown "http://foo.com" 4)
+  :should be "<a href=\"http://foo.com\" rel=\"nofollow\">http...</a>")
+
+(test-ac "markdown segments paragraphs"
+  :valueof (markdown "abc\n\ndef")
+  :should be "abc<p>def")
+
+(test-ac "markdown formats indented regions as code"
+  :valueof (markdown "  abc")
+  :should be "<p><pre><code>  abc</code></pre>")
+
+(test-ac "markdown formats asterisks in italics"
+  :valueof (markdown "*abc*")
+  :should be "<i>abc</i>")
