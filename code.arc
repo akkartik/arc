@@ -26,13 +26,8 @@
     counts))
 
 (def common-tokens (files)
-  (let counts (tokcount files)
-    (let ranking nil
-      (maptable (fn (k v)
-                  (unless (nonop k)
-                    (insort (compare > cadr) (list k v) ranking)))
-                counts)
-      ranking)))
+  (sort (compare > cadr)
+        (rem nonop:car (tablist:tokcount files))))
 
 (def nonop (x)
   (in x 'quote 'unquote 'quasiquote 'unquote-splicing))

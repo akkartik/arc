@@ -1545,13 +1545,20 @@
 
 (= count-up sortable:freq)
 
-(def commonest (seq)
-  (with (winner nil n 0)
-    (each (k v) (freq seq)
-      (when (> v n) (= winner k n v)))
-    (list winner n)))
+(def counts (seq)
+  (ret ans (table)
+    (each x seq
+      (++ (ans x 0)))))
 
-;HERE
+(def tree-counts (tree)
+  (counts flat.tree))
+
+(def commonest (seq)
+  (best (compare > counts.seq) seq))
+
+(def sort-by-commonest (seq (o f idfn))
+  (let h (counts:map f seq)
+    (sort (compare > h:f) seq)))
 
 (def reduce (f xs)
   (if (cddr xs)
