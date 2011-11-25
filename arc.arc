@@ -95,19 +95,6 @@
 (mac ret (var val . body)
  `(let ,var ,val ,@body ,var))
 
-(mac awhile (expr . body)
-  `(whilet it ,expr
-    ,@body))
-
-(mac forever body
-  `(while t ,@body))
-
-(mac disabled body
-  `(when nil ,@body))
-
-(mac enabled body
-  `(when t ,@body))
-
 (def l (file)
   (load:+ (string file) ".arc"))
 
@@ -167,6 +154,33 @@
 
 (mac awhen (expr . body)
   `(let it ,expr (if it (do ,@body))))
+
+(mac while (test . body)
+  (w/uniq (gf gp)
+    `((rfn ,gf (,gp)
+        (when ,gp ,@body (,gf ,test)))
+      ,test)))
+
+(mac forever body
+  `(while t ,@body))
+
+(mac disabled body
+  `(when nil ,@body))
+
+(mac enabled body
+  `(when t ,@body))
+
+(mac whilet (var test . body)
+  (w/uniq (gf gp)
+    `((rfn ,gf (,gp)
+        (whenlet ,var ,gp
+          ,@body
+          (,gf ,test)))
+      ,test)))
+
+(mac awhile (expr . body)
+  `(whilet it ,expr
+    ,@body))
 
 (mac aand args
   (if (no args)
@@ -569,12 +583,6 @@
 
 (def alref (al key) (cadr (assoc key al)))
 
-(mac while (test . body)
-  (w/uniq (gf gp)
-    `((rfn ,gf (,gp)
-        (when ,gp ,@body (,gf ,test)))
-      ,test)))
-
 
 
 (mac loop (start test update . body)
@@ -623,13 +631,6 @@
             (= (s2 i) (seq (+ start i))))
           s2)
         (firstn (- end start) (nthcdr start seq)))))
-
-(mac whilet (var test . body)
-  (w/uniq (gf gp)
-    `((rfn ,gf (,gp)
-        (let ,var ,gp
-          (when ,var ,@body (,gf ,test))))
-      ,test)))
 
 
 
