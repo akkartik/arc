@@ -203,9 +203,10 @@
 
 
 
-; Ac expands x:y:z into (compose x y z), ~x into (complement x)
-
-; Only used when the call to compose doesn't occur in functional position.
+; Ac expands x:y:z into (compose x y z)
+; The last arg (z above) cannot be a macro unless the form is in functional
+; position.
+;
 ; Composes in functional position are transformed away by ac.
 
 (mac compose args
@@ -213,15 +214,17 @@
     `(fn ,g
        ,((afn (fs)
            (if (cdr fs)
-               (list (car fs) (self (cdr fs)))
-               `(apply ,(if (car fs) (car fs) 'idfn) ,g)))
+               (list car.fs (self cdr.fs))
+               `(apply ,(or car.fs 'idfn) ,g)))
          args))))
 
-; Ditto: complement in functional position optimized by ac.
+; Ac expands ~x into (complement x)
+; x cannot be a macro unless the form is in functional position.
+; Complement in functional position is transformed away by ac, and can handle
+; macros.
 
-(mac complement (f)
-  (let g (uniq)
-    `(fn ,g (no (apply ,f ,g)))))
+(def complement (f)
+  (fn args (no (apply f args))))
 
 
 
