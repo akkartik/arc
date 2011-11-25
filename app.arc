@@ -436,11 +436,9 @@
     (tostring
       (forlen i s
         (iflet (newi spaces) (indented-code s i (if (is i 0) 2 0))
-          (do (pr "<p><pre><code>")
-            (let cb (code-block s (- newi spaces 1))
-              (pr cb)
-              (= i (+ (- newi spaces 1) (len cb))))
-            (pr "</code></pre>"))
+          (let cb (code-block s (- newi spaces 1))
+            (pr  "<p><pre><code>" cb "</code></pre>")
+            (= i (+ len.cb (- newi spaces 1))))
           (iflet newi (parabreak s i (if (is i 0) 1 0))
              (do (unless (is i 0) (pr "<p>"))
                  (= i (- newi 1)))
