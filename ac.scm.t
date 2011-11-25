@@ -721,3 +721,11 @@
 (test-ac "markdown formats asterisks in italics"
   :valueof (markdown "*abc*")
   :should be "<i>abc</i>")
+
+(test-ac "static-filetype recognizes jpegs"
+  :valueof (static-filetype "/abc.jpg")
+  :should be 'jpg)
+
+(test-ac "static-filetype handles paths containing slashes"
+  :valueof (static-filetype "/abc/def.jpg")
+  :should be 'jpg)
