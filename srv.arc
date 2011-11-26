@@ -53,11 +53,11 @@
           ip-wrapper  (wrapper ip (= ip car.params))
           th1         nil
           th2         nil)
-    (= th1 (thread
+    (= th1 (thread "handler"
              (after (handle-request-thread i o ip-wrapper)
                     (close i o)
                     (if th2 (kill-thread th2)))))
-    (= th2 (thread
+    (= th2 (thread "nanny"
              (sleep threadlife*)
              (unless (and th1 (dead th1))
                (prn "srv thread took too long for " ip))
@@ -592,10 +592,9 @@ Connection: close"))
 
 (def new-bgthread (id f sec)
   (aif (bgthreads* id) (break-thread it))
-  (= (bgthreads* id) (new-thread (fn ()
-                                   (while t
-                                     (sleep sec)
-                                     (f))))))
+  (= (bgthreads* id) (thread "bg" (while t
+                                    (sleep sec)
+                                    (f)))))
 
 ; should be a macro for this?
 
