@@ -252,23 +252,23 @@ Connection: close"))
               (awhen (max-age* op)
                 (prn "Cache-Control: max-age=" it))
               (f str req))))
-      (when (secure? op)
-        (let filetype (static-filetype op)
-          (aif (and filetype (file-exists (string staticdir* op)))
-               (do (prn (type-header* filetype))
-                   (awhen static-max-age*
-                     (prn "Cache-Control: max-age=" it))
-                   (prn)
-                   (w/infile i it
-                     (whilet b (readb i)
-                       (writeb b str))))
-               (respond-err str unknown-msg*)))))))
+      (iflet filename (check (string staticdir* op) file-exists&secure?)
+        (iflet filetype static-filetype.filename
+          (do (prn (type-header* filetype))
+              (awhen static-max-age*
+                (prn "Cache-Control: max-age=" it))
+              (prn)
+              (w/infile i filename
+                (whilet b (readb i)
+                  (writeb b str))))
+          (respond-err str unknown-msg*))
+        (respond-err str unknown-msg*)))))
 
-(def secure? (sym)
-  (~posmatch ".." string.sym))
+(def secure? (path)
+  (~posmatch ".." path))
 
-(def static-filetype (sym)
-  (case (downcase (last (tokens string.sym #\.)))
+(def static-filetype (path)
+  (case (downcase:last:tokens path #\.)
     "gif"  'gif
     "jpg"  'jpg
     "jpeg" 'jpg
