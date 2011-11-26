@@ -268,7 +268,7 @@ Connection: close"))
   (~posmatch ".." string.sym))
 
 (def static-filetype (sym)
-  (case (downcase (last (check (tokens string.sym #\.) ~single)))
+  (case (downcase (last (tokens string.sym #\.)))
     "gif"  'gif
     "jpg"  'jpg
     "jpeg" 'jpg

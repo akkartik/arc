@@ -722,6 +722,10 @@
   :valueof (markdown "*abc*")
   :should be "<i>abc</i>")
 
+(test-ac "static-filetype filters files without extensions"
+  :valueof (static-filetype "/abc")
+  :should be nil)
+
 (test-ac "static-filetype recognizes jpegs"
   :valueof (static-filetype "/abc.jpg")
   :should be 'jpg)
