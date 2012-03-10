@@ -733,3 +733,76 @@
 (test-ac "static-filetype handles paths containing slashes"
   :valueof (static-filetype "/abc/def.jpg")
   :should be 'jpg)
+
+(arc-eval '(deftem foo field1 'default))
+(arc-eval '(= f inst!foo))
+
+(test-ac "templates pick up defaults"
+  :valueof f!field1
+  :should be 'default)
+
+(arc-eval '(= f!field1 34))
+(test-ac "reading and assigning templates works"
+  :valueof f!field1
+  :should be 34)
+
+(arc-eval '(= f!field1 nil))
+(test-ac "assigning templates to nil works"
+  :valueof f!field1
+  :should be nil)
+
+(test-ac "temlist works"
+  :valueof (temlist 'foo (inst 'foo 'field1 34))
+  :should be '((field1 34)))
+
+(test-ac "temlist skips default fields"
+  :valueof (temlist 'foo (inst 'foo 'new-field 3))
+  :should be '((new-field 3)))
+
+(test-ac "temlist keeps nil non-default fields"
+  :valueof (temlist 'foo (inst 'foo 'field1 nil))
+  :should be '((field1 ())))
+
+(test-ac "temlist includes explicitly set default fields"
+  :valueof (temlist 'foo (inst 'foo 'field1 'default))
+  :should be '((field1 default)))
+
+(test-ac "temlist skips unknown nil fields"
+  :valueof (temlist 'foo (inst 'foo 'new-field1 nil 'new-field2 3))
+  :should be '((new-field2 3)))
+
+(test-ac "listtem DOES NOT ignore unknown fields"
+  :valueof (listtem 'foo '((new-field 34)))
+  :should be (inst 'foo 'new-field 34))
+
+(test-ac "temlist and listtem are converses"
+  :valueof (listtem 'foo (temlist 'foo (inst 'foo 'field1 34)))
+  :should be (inst 'foo 'field1 34))
+
+(test-ac "temread and temwrite are converses"
+  :valueof (w/instring i (w/outstring o
+                           (temwrite 'foo (inst 'foo 'field1 34) o)
+                           (inside o))
+             (temread 'foo i))
+  :should be (inst 'foo 'field1 34))
+
+(test-ac "temread and temwrite are converses - 2"
+  :valueof (w/instring i (w/outstring o
+                           (temwrite 'foo (inst 'foo 'field1 nil) o)
+                           (inside o))
+             (temread 'foo i))
+  :should be (inst 'foo 'field1 nil))
+
+(test-ac "nil in file overwrites default"
+  :valueof (w/instring i (w/outstring o
+                           (temwrite 'foo (inst 'foo 'field1 nil) o)
+                           (inside o))
+             ((temread 'foo i) 'field1))
+  :should be nil)
+
+(test-ac "templates can distinguish explicit defaults from implicit defaults"
+  :valueof (let tem (inst 'foo)
+             (= tem!field1 34)
+             (= tem!field1 'default) ; explicit set
+             rep.tem.1)
+  :should be (obj field1 'default))

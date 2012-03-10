@@ -975,6 +975,13 @@
 (def read (? x (stdin) eof nil)
   (if (isa x 'string) (readstring1 x eof) (sread x eof)))
 
+; encapsulate eof management
+(mac reading (var port . body)
+  (w/uniq eof
+    `(let ,var (read ,port ',eof)
+       (if (~is ',eof ,var)
+         ,@body))))
+
 ; inconsistency between names of readfile[1] and writefile
 
 (def readfile (name) (w/infile s name (drain (read s))))
@@ -1366,52 +1373,7 @@
   (+ xs (rem (fn (y) (some [f _ y] xs))
              ys)))
 
-(= templates* (table))
-
-(mac deftem (tem . fields)
-  (withs (name (carif tem) includes (if (acons tem) (cdr tem)))
-    `(= (templates* ',name)
-        (+ (mappend templates* ',(rev includes))
-           (list ,@(map (fn ((k v)) `(list ',k (fn () ,v)))
-                        (pair fields)))))))
-
-(mac addtem (name . fields)
-  `(= (templates* ',name)
-      (union (fn (x y) (is (car x) (car y)))
-             (list ,@(map (fn ((k v)) `(list ',k (fn () ,v)))
-                          (pair fields)))
-             (templates* ',name))))
-
-(def inst (tem . args)
-  (let x (table)
-    (each (k v) (if (acons tem) tem (templates* tem))
-      (unless (no v) (= (x k) (v))))
-    (each (k v) (pair args)
-      (= (x k) v))
-    x))
-
-; To write something to be read by temread, (write (tablist x))
-
-(def temread (tem ? str (stdin))
-  (templatize tem (read str)))
-
-; Converts alist to inst; ugly; maybe should make this part of coerce.
-; Note: discards fields not defined by the template.
-
-(def templatize (tem raw)
-  (with (x (inst tem) fields (if (acons tem) tem (templates* tem)))
-    (each (k v) raw
-      (when (assoc k fields)
-        (= (x k) v)))
-    x))
-
-(def temload (tem file)
-  (w/infile i file (temread tem i)))
-
-(def temloadall (tem file)
-  (map (fn (pairs) (templatize tem pairs))
-       (w/infile in file (readall in))))
-
+
 
 (def number (n) (in (type n) 'int 'num))
 
@@ -1794,6 +1756,9 @@
     `(defcoerce fn ,type-name (,fnobj)
        (fn ,args (apply (fn ,parms ,@body) ,fnobj ,args)))))
 
+(defcoerce table nil (_)
+  (table))
+
 (defcoerce cons table (h)
   (tablist h))
 
@@ -1941,6 +1906,85 @@
                    ,gv ,v
                    ,gf (fn () ,@body))
               ($ (parameterize ((,param ,gv)) (,gf))))))))
+
+
+
+(= templates* (table))
+
+(mac deftem (tem . fields)
+  (withs (name (carif tem) includes (if (acons tem) (cdr tem)))
+    `(= (templates* ',name)
+        (+ (mappend templates* ',(rev includes))
+           (list ,@(map (fn ((k v)) `(list ',k (fn () ,v)))
+                        (pair fields)))))))
+
+(mac addtem (name . fields)
+  `(= (templates* ',name)
+      (union (fn (x y) (is (car x) (car y)))
+             (list ,@(map (fn ((k v)) `(list ',k (fn () ,v)))
+                          (pair fields)))
+             (templates* ',name))))
+
+; (tagged 'tem (tem-type fields nils))
+(def inst (tem-type . args)
+  (annotate 'tem (list tem-type
+                       (coerce pair.args 'table)
+                       (memtable (map car (keep no:cadr pair.args))))))
+
+(mac extend (name arglist test . body)
+  (w/uniq args
+    `(let orig ,name
+       (= ,name
+          (fn ,args
+            (aif (apply (fn ,arglist ,test) ,args)
+                  (apply (fn ,arglist ,@body) ,args)
+                  (apply orig ,args)))))))
+
+(extend sref (tem v k) (isa tem 'tem)
+  (sref rep.tem.1 v k)
+  (if v
+    (wipe rep.tem.2.k)
+    (set rep.tem.2.k)))
+
+(defcall tem (tem k)
+  (or rep.tem.1.k
+      (if (no rep.tem.2.k)
+        ((alref (templates* rep.tem.0) k)))))
+
+(defmethod iso(a b) tem
+  (and (isa a 'tem)
+       (isa b 'tem)
+       (iso rep.a rep.b)))
+
+(def temload (tem file)
+  (w/infile i file (temread tem i)))
+
+(def temloadall (tem file)
+  (w/infile i file (drain:temread tem i)))
+
+(def temstore (tem val file)
+  (writefile (temlist tem val) file))
+
+(def temread (tem ? str (stdin))
+  (reading fields str
+    (listtem tem fields)))
+
+(def temwrite (tem val ? o (stdout))
+  (write (temlist tem val) o))
+
+; coerce alist to a specific template
+(def listtem (tem fields)
+  (apply inst tem (apply + fields)))
+
+; like tablist, but include explicitly-set nil fields
+(def temlist (tem val)
+  (ret fields (coerce rep.val.1 'cons)
+    (iflet nil-fields (coerce rep.val.2 'cons)
+      (each (k v) (if acons.tem
+                    tem
+                    templates*.tem)
+        (if (assoc k nil-fields)
+          (push (list k nil) fields))))))
 
 
 
