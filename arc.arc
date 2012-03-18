@@ -1790,7 +1790,8 @@
 (or= vtables*!unserialize (table))
 (def unserialize (x)
   (aif (vtables*!unserialize type*.x)   (it x)
-    (acons x)   (map unserialize x)
+    (acons x)   (cons (unserialize car.x)
+                      (unserialize cdr.x))
                 x))
 
 (def type* (x)
@@ -1808,6 +1809,11 @@
   (w/table h
     (map (fn ((k v)) (= h.k unserialize.v))
          cadr.x)))
+
+(def read ((o x (stdin)) (o eof nil))
+  (if (isa x 'string)
+    (readstring1 x eof)
+    (unserialize:sread x eof)))
 
 
 

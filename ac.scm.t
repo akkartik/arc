@@ -806,3 +806,7 @@
              (= tem!field1 'default) ; explicit set
              rep.tem.1)
   :should be (obj field1 'default))
+
+(test-ac "unserialize handles improper lists"
+  :valueof (unserialize '(a . b))
+  :should be '(a . b))
