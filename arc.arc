@@ -966,12 +966,6 @@
        (w/stdout ,gf
          ,@body))))
 
-(def readstring1 (s ? eof nil)
-  (w/instring i s (read i eof)))
-
-(def read (? x (stdin) eof nil)
-  (if (isa x 'string) (readstring1 x eof) (sread x eof)))
-
 ; encapsulate eof management
 (mac reading (var port . body)
   (w/uniq eof
@@ -1809,7 +1803,7 @@
 
 (def read (? x (stdin) eof nil)
   (if (isa x 'string)
-    (readstring1 x eof)
+    (w/instring i x (read i eof))
     (unserialize:sread x eof)))
 
 
@@ -1872,8 +1866,8 @@
 
 
 
-(= scheme-f (read "#f"))
-(= scheme-t (read "#t"))
+(= scheme-f (w/instring i "#f" (sread i nil)))
+(= scheme-t (w/instring i "#t" (sread i nil)))
 
 (= ac-global-name $.ac-global-name)
 
