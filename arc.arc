@@ -95,9 +95,6 @@
 (mac ret (var val . body)
  `(let ,var ,val ,@body ,var))
 
-(def l (file)
-  (load:+ (string file) ".arc"))
-
 
 
 (mac with (parms . body)
@@ -1522,7 +1519,7 @@
 (def commonest (seq)
   (best (compare > counts.seq) seq))
 
-(def sort-by-commonest (seq (o f idfn))
+(def sort-by-commonest (seq ? f idfn)
   (let h (counts:map f seq)
     (sort (compare > h:f) seq)))
 
@@ -1810,7 +1807,7 @@
     (map (fn ((k v)) (= h.k unserialize.v))
          cadr.x)))
 
-(def read ((o x (stdin)) (o eof nil))
+(def read (? x (stdin) eof nil)
   (if (isa x 'string)
     (readstring1 x eof)
     (unserialize:sread x eof)))
