@@ -955,10 +955,12 @@
          ,@body))))
 
 (mac tofile (f . body)
-  (w/uniq gf
-    `(w/outfile ,gf ,f
-       (w/stdout ,gf
-         ,@body))))
+  (w/uniq (gf gs)
+    `(let ,gs (+ ,f "." rand-string.6)
+       (w/outfile ,gf ,gs
+         (w/stdout ,gf
+           ,@body))
+       (mvfile ,gs ,f))))
 
 (mac ontofile (f . body)
   (w/uniq gf
@@ -973,11 +975,17 @@
        (if (~is ',eof ,var)
          ,@body))))
 
-; inconsistency between names of readfile[1] and writefile
+(def readfile (name)
+  (fromfile name
+    (drain:read)))
 
-(def readfile (name) (w/infile s name (drain (read s))))
+(def readfile1 (name)
+  (fromfile name
+    (read)))
 
-(def readfile1 (name) (w/infile s name (read s)))
+(def writefile (val name)
+  (tofile name
+    (write val)))
 
 (def readall (src ? eof nil)
   ((afn (i)
@@ -993,12 +1001,6 @@
 
 (def filechars (name)
   (w/infile s name (allchars s)))
-
-(def writefile (val file)
-  (let tmpfile (+ file ".tmp")
-    (w/outfile o tmpfile (write val o))
-    (mvfile tmpfile file))
-  val)
 
 (def sym (x) (if x (coerce x 'sym)))
 
