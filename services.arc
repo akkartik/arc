@@ -40,3 +40,6 @@
 (= current-gc-milliseconds $.current-gc-milliseconds)
 
 (= sleep ($:wrapnil sleep))
+
+(def mktemp(? prefix "arc")
+  ($ (path->string (make-temporary-file (string-append prefix ".~a")))))
