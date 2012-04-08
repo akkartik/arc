@@ -363,11 +363,11 @@
   :should be 3)
 
 (test-ac "some 1 - string"
-  :valueof (some (testify #\@) "a@b")
+  :valueof (some (testify #\?) "a?b")
   :should be t)
 
 (test-ac "some 2"
-  :valueof (some (testify #\@) "abc")
+  :valueof (some (testify #\?) "abc")
   :should be ())
 
 (test-ac "some 3 - list"
@@ -379,19 +379,19 @@
   :should be ())
 
 (test-ac "find 1 - string"
-  :valueof (find #\@ "a@b")
-  :should be #\@)
+  :valueof (find #\? "a?b")
+  :should be #\?)
 
 (test-ac "find 2"
-  :valueof (find #\@ "abc")
+  :valueof (find #\? "abc")
   :should be ())
 
 (test-ac "find 3 - list"
-  :valueof (find #\@ '(#\@))
-  :should be #\@)
+  :valueof (find #\? '(#\?))
+  :should be #\?)
 
 (test-ac "find 4"
-  :valueof (find #\@ '(1 2))
+  :valueof (find #\? '(1 2))
   :should be ())
 
 (test-ac "find 5"
@@ -423,12 +423,12 @@
   :should be '(2 4))
 
 (test-ac "rem 2 - string"
-  :valueof (rem #\@ "a@b")
+  :valueof (rem #\? "a?b")
   :should be "ab")
 
 (test-ac "keep 1 - string"
-  :valueof (keep (testify #\@) "a@b")
-  :should be "@")
+  :valueof (keep (testify #\?) "a?b")
+  :should be "?")
 
 (arc-eval '(implicit implicit0 10))
 (arc-eval '(def g() ++.implicit0)) ; fails if this is in a do block with the implicit decl. Bug?

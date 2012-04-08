@@ -1556,7 +1556,7 @@
 (def load (file)
   (w/infile f file
     (w/uniq eof
-      (whiler e (read f eof) eof
+      (whiler e (sread f eof) eof
         (eval e)))))
 
 ; l!foo => (load "foo.arc")
