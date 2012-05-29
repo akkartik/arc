@@ -96,6 +96,7 @@
 (attribute form       action         opstring)
 (attribute form       method         opsym)
 (attribute form       onsubmit       opstring)
+(attribute form       enctype        opstring)
 (attribute img        align          opsym)
 (attribute img        border         opnum)
 (attribute img        height         opnum)

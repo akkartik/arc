@@ -875,10 +875,19 @@
                   (self (car x) (self (cdr x) acc))))
    x nil))
 
+(def zip xs
+  (apply map list xs))
+
 (mac check (x test ? alt nil)
   (w/uniq gx
     `(let ,gx ,x
        (if (,test ,gx) ,gx ,alt))))
+
+(mac acheck (x test ? alt nil)
+  `(let it ,x
+     (if (,test it)
+       it
+       ,alt)))
 
 (def pos (test seq ? start 0)
   (let f (testify test)

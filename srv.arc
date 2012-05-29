@@ -127,18 +127,17 @@
   (harvest-fnids))
 
 (def handle-request-2 (lines i o ip-wrapper t0)
-  (let (type op args n cooks) (parseheader (rev lines))
+  (let (type op args n cooks ctype) (parseheader (rev lines))
     (if show-requests* (prn lines))
     (unless (abusive-ip (proxy-ip ip-wrapper lines))
-      (handle-request-3 type i o op args n cooks (ip-wrapper) t0))))
+      (handle-request-3 type i o op args n cooks ctype (ip-wrapper) t0))))
 
-(def handle-request-3 (type i o op args n cooks ip t0)
+(def handle-request-3 (type i o op args n cooks ctype ip t0)
   (let t1 (msec)
-    (let arg-wrapper (wrapper args (zap [+ _ car.params] args))
-      (case type
-        'get  (respond o op args cooks ip)
-        'post (handle-post i o op arg-wrapper n cooks ip)
-              (respond-err o "Unknown request: " ip " " type)))
+    (case type
+      'get  (respond o op args cooks ip)
+      'post (handle-post i o op args n cooks ctype ip)
+            (respond-err o "Unknown request: " ip " " type))
     (log-request type op args cooks ip t0 t1)))
 
 (def log-request (type op args cooks ip t0 t1)
@@ -151,22 +150,6 @@
                  op
                  args
                  cooks)))
-
-; Could ignore return chars (which come from textarea fields) here by
-; (unless (is c #\return) (push c line))
-
-(def handle-post (i o op arg-wrapper n cooks ip)
-  (if srv-noisy* (pr "Post Contents: "))
-  (if (no n)
-      (respond-err o "Post request without Content-Length.")
-      (let line nil
-        (whilet c (and (> n 0) (readc i))
-          (if srv-noisy* (pr c))
-          (-- n)
-          (push c line))
-        (if srv-noisy* (pr "\n\n"))
-        (arg-wrapper (parseargs (string (rev line))))
-        (respond o op (arg-wrapper) cooks ip))))
 
 (= header* "HTTP/1.1 200 OK
 Content-Type: text/html; charset=utf-8
@@ -268,6 +251,71 @@ Connection: close"))
           (respond-err str unknown-msg*))
         (respond-err str unknown-msg*)))))
 
+(def handle-post (i o op args n cooks ctype ip)
+  (if srv-noisy* (pr "Post Contents: "))
+  (if (no n)
+    (respond-err o "Post request without Content-Length.")
+    (let body (string:readchars n i)
+      (if srv-noisy* (pr body "\r\n\r\n"))
+      (respond o op (+ args
+                       (if (~begins downcase.ctype "multipart/form-data")
+                         parseargs.body
+                         (parse-multipart-args multipart-boundary.ctype body)))
+               cooks ip))))
+
+(def parse-multipart-args(boundary body)
+  (let indices (find-all boundary body)
+    (accum yield
+      (each (index new-index) (zip indices cdr.indices)
+        (yield:parse-multipart-part body
+                                    (+ index len.boundary)
+                                    new-index)))))
+
+; a multipart boundary ends at start and starts at end
+(def parse-multipart-part(body start end)
+  (= start (+ start 2)) ; skip first CRLF
+  (= end (- end 2)) ; lose the final CRLF before next boundary
+  ; Require a name header.
+  ; "The boundary must be followed immediately either by another CRLF and the
+  ; header fields for the next part, or by two CRLFs, in which case there are no
+  ; header fields for the next part.."
+  ;   -- http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
+  (whenlet headers (parse-mime-header:until-2-crlfs body start)
+    (list (unstring:alref headers "name")
+          (w/table result
+            (= (result "contents") (past-2-crlfs body start end))
+            (each (property val) headers
+              (if (~iso "name" property)
+                (= result.property val)))))))
+
+; parse lines of the form a=b; c=d; e=f; ..
+; segments without '=' are passed through as single-elem lists
+(def parse-mime-header(line)
+  (map [tokens _ #\=]
+       (tokens downcase.line (orf whitec (testify #\;)))))
+
+(def multipart-boundary(s)
+  (let delim "boundary="
+    (+ "--" (cut s (+ (findsubseq delim s)
+                      len.delim)))))
+
+(def find-all(pat seq ? index 0)
+  (whenlet new-index (findsubseq pat seq index)
+    (cons new-index (find-all pat seq (+ 1 new-index)))))
+
+(def until-2-crlfs(s ? n 0)
+  (cut s n (posmatch "\r\n\r\n" s n)))
+
+(def past-2-crlfs(s n ? end nil)
+  (cut s (+ 4 (posmatch "\r\n\r\n" s n))
+       end))
+
+; "\"abc\"" => "abc"
+(def unstring(s)
+  (if (iso #\" s.0)
+    (cut s 1 -1)
+    s))
+
 (def secure? (path)
   (~posmatch ".." path))
 
@@ -306,7 +354,12 @@ Connection: close"))
           (some (fn (s)
                   (and (begins downcase.s "cookie:")
                        (parsecookies s)))
-                (cdr lines)))))
+                (cdr lines))
+          (and (is type 'post)
+               (some (fn (s)
+                       (and (begins downcase.s "content-type: ")
+                            (cut s (len "content-type: "))))
+                     (cdr lines))))))
 
 ; (parseurl "GET /p1?foo=bar&ug etc") -> (get p1 (("foo" "bar") ("ug")))
 
@@ -329,7 +382,10 @@ Connection: close"))
   (map [tokens _ #\=]
        (cdr (tokens s [or (whitec _) (is _ #\;)]))))
 
-(def arg (req key) (alref req!args string.key))
+(def arg (req key)
+  (acheck (alref req!args key) [~isa _ 'table]
+    ; deref multipart params by default
+    (it "contents")))
 
 ; *** Warning: does not currently urlencode args, so if need to do
 ; that replace v with (urlencode v).
@@ -475,6 +531,13 @@ Connection: close"))
     (fnid-field (fnid f))
     (bodyfn)))
 
+(mac form-multi (action . body)
+  (w/uniq ga
+    `(tag (form method 'post
+                enctype "multipart/form-data"
+                action ,action)
+       ,@body)))
+
 ; Could also make a version that uses just an expr, and var capture.
 ; Is there a way to ensure user doesn't use "fnid" as a key?
 
@@ -484,6 +547,16 @@ Connection: close"))
        (fnid-field (fnid (fn (,ga)
                            (prn)
                            (,f ,ga))))
+       ,@body)))
+
+(mac aform-multi (f . body)
+  (w/uniq ga
+    `(tag (form method 'post
+                enctype "multipart/form-data"
+                action (string fnurl* "?fnid="
+                               (fnid (fn (,ga)
+                                       (prn)
+                                       (,f ,ga)))))
        ,@body)))
 
 ;(defop test1 req

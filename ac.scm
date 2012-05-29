@@ -901,6 +901,11 @@
                                       (current-input-port)))))
                 (if (eof-object? c) () c))))
 
+(xdef readchars (lambda (n . str)
+                  (let ((cs (read-string n (if (pair? str)
+                                              (car str)
+                                              (current-input-port)))))
+                    (if (eof-object? cs) 'nil (string->list cs)))))
 
 (xdef readb (lambda str
               (let ((c (read-byte (if (pair? str)
