@@ -251,37 +251,63 @@ Connection: close"))
 (def handle-post (in out op args clen cooks ctype ip)
   (if (no clen)
     (respond-err out "Post request without Content-Length.")
-    (let body (string:readchars clen in)
-      (respond out op (+ args
-                         (if (~begins downcase.ctype "multipart/form-data")
-                           parseargs.body
-                           (parse-multipart-args multipart-boundary.ctype body)))
-               cooks ip))))
+    (respond out op (+ args
+                       (if (~begins downcase.ctype "multipart/form-data")
+                         (parseargs:string:readchars clen in) ; ascii
+                         (parse-multipart-args multipart-boundary.ctype in))) ; maybe non-ascii
+             cooks clen ctype in ip)))
 
-(def parse-multipart-args(boundary body)
-  (let indices (find-all boundary body)
-    (accum yield
-      (each (index new-index) (zip indices cdr.indices)
-        (yield:parse-multipart-part body
-                                    (+ index len.boundary)
-                                    new-index)))))
+(def multipart-boundary(s)
+  (let delim "boundary="
+    (+ "--" (cut s (+ (findsubseq delim s)
+                      len.delim)))))
 
-; a multipart boundary ends at start and starts at end
-(def parse-multipart-part(body start end)
-  (= start (+ start 2)) ; skip first CRLF
-  (= end (- end 2)) ; lose the final CRLF before next boundary
-  ; Require a name header.
+(def parse-multipart-args(boundary in)
+  (scan-past boundary in) ; skip prelude
+  (accum yield
+    (until (multipart-end boundary in)
+      (withs (headers   scan-headers.in
+              body  (scan-body boundary in)) ; only part that may contain non-ascii
+        (when headers
+          (yield:parse-multipart-part headers body))))))
+
+; "The final boundary is followed by two more hyphens to indicate that no
+; further parts follow."
+;   -- http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
+; We've already read the boundary itself.
+(def multipart-end(boundary in)
+  (aif peekc.in
+    (and (is #\- it) readc.in
+         (or (is #\- peekc.in)
+             ; "one #\- shalt thou not count,
+             ; excepting that thou then proceed to two"
+             (ero "malformed multipart input; boundary followed by just one '-'. Is it the final part or isn't it?")))
+    (ero "malformed multipart input; request didn't have a final boundary")))
+
+(def scan-headers(in)
   ; "The boundary must be followed immediately either by another CRLF and the
   ; header fields for the next part, or by two CRLFs, in which case there are no
   ; header fields for the next part.."
   ;   -- http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
-  (whenlet headers (parse-mime-header:until-2-crlfs body start)
-    (list (unstring:alref headers "name")
-          (w/table result
-            (= (result "contents") (past-2-crlfs body start end))
+  (parse-mime-header:bytes-string:scan-past "\r\n\r\n" in))
+
+(def scan-body(boundary in)
+  ; "The CRLF preceding the encapsulation line is considered part of the
+  ; boundary.."
+  ;   -- http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
+  (scan-past (+ "\r\n" boundary) in))
+
+(def parse-multipart-part(headers body)
+  (awhen (and headers (alref headers "name"))
+    (list unstring.it
+          (w/table multipart-arg
+            (= (multipart-arg "contents")
+               (if (all-ascii? body)
+                 bytes-string.body
+                 body))
             (each (property val) headers
-              (if (~iso "name" property)
-                (= result.property val)))))))
+              (unless (iso "name" property)
+                (= multipart-arg.property val)))))))
 
 ; parse lines of the form a=b; c=d; e=f; ..
 ; segments without '=' are passed through as single-elem lists
@@ -289,21 +315,24 @@ Connection: close"))
   (map [tokens _ #\=]
        (tokens downcase.line (orf whitec (testify #\;)))))
 
-(def multipart-boundary(s)
-  (let delim "boundary="
-    (+ "--" (cut s (+ (findsubseq delim s)
-                      len.delim)))))
+; return list of bytes until pat is encountered
+; pat is read from input but dropped from result
+; all chars in pat must be 1-byte
+(def scan-past(pat in)
+  (= pat (map int (coerce pat 'cons)))
+  (let buffer (spliceable-list len.pat)
+    (until (iso pat suffix.buffer)
+      (append (list readb.in) buffer))
+    splice.buffer))
 
-(def find-all(pat seq ? index 0)
-  (whenlet new-index (findsubseq pat seq index)
-    (cons new-index (find-all pat seq (+ 1 new-index)))))
+; convert list of bytes to string
+(def bytes-string(l)
+  (coerce (map [coerce _ 'char]
+               l)
+          'string))
 
-(def until-2-crlfs(s ? n 0)
-  (cut s n (posmatch "\r\n\r\n" s n)))
-
-(def past-2-crlfs(s n ? end nil)
-  (cut s (+ 4 (posmatch "\r\n\r\n" s n))
-       end))
+(def all-ascii?(l)
+  (errsafe:all [<= 0 _ 127] l))
 
 ; "\"abc\"" => "abc"
 (def unstring(s)
