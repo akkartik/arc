@@ -49,20 +49,20 @@
 
 (def handle-request-1 (s)
   (++ requests*)
-  (withs ((i o ip)    (socket-accept s)
+  (withs ((in out ip) (socket-accept s)
           ip-wrapper  (wrapper ip (= ip car.params))
           th1         nil
           th2         nil)
     (= th1 (thread "handler"
-             (after (handle-request-thread i o ip-wrapper)
-                    (close i o)
+             (after (handle-request-thread in out ip-wrapper)
+                    (close in out)
                     (if th2 (kill-thread th2)))))
     (= th2 (thread "nanny"
              (sleep threadlife*)
              (unless (and th1 (dead th1))
                (prn "srv thread took too long for " ip))
              (if th1 (kill-thread th1))
-             (force-close i o)))))
+             (force-close in out)))))
 
 ; Returns true if ip has made req-limit* requests in less than
 ; req-window* seconds.  If an ip is throttled, only 1 request is
@@ -108,36 +108,36 @@
         (ip-wrapper))))
 
 (wipe show-requests*)
-(def handle-request-thread (i o ip-wrapper)
+(def handle-request-thread (in out ip-wrapper)
   (with (nls 0 lines nil line nil responded nil t0 (msec))
     (after
-      (whilet c (unless responded (readc i))
+      (whilet c (unless responded readc.in)
         (if srv-noisy* (pr c))
         (if (is c #\newline)
             (if (is (++ nls) 2)
                 (do
-                  (handle-request-2 lines i o ip-wrapper t0)
+                  (handle-request-2 lines in out ip-wrapper t0)
                   (set responded))
                 (do (push (string (rev line)) lines)
                     (wipe line)))
             (unless (is c #\return)
               (push c line)
               (= nls 0))))
-      (close i o)))
+      (close in out)))
   (harvest-fnids))
 
-(def handle-request-2 (lines i o ip-wrapper t0)
-  (let (type op args n cooks ctype) (parseheader (rev lines))
+(def handle-request-2 (lines in out ip-wrapper t0)
+  (let (type op args clen cooks ctype) (parseheader (rev lines))
     (if show-requests* (prn lines))
     (unless (abusive-ip (proxy-ip ip-wrapper lines))
-      (handle-request-3 type i o op args n cooks ctype (ip-wrapper) t0))))
+      (handle-request-3 type in out op args clen cooks ctype (ip-wrapper) t0))))
 
-(def handle-request-3 (type i o op args n cooks ctype ip t0)
+(def handle-request-3 (type in out op args clen cooks ctype ip t0)
   (let t1 (msec)
     (case type
-      'get  (respond o op args cooks ip)
-      'post (handle-post i o op args n cooks ctype ip)
-            (respond-err o "Unknown request: " ip " " type))
+      'get  (respond out op args cooks ip)
+      'post (handle-post in out op args clen cooks ctype ip)
+            (respond-err out "Unknown request: " ip " " type))
     (log-request type op args cooks ip t0 t1)))
 
 (def log-request (type op args cooks ip t0 t1)
@@ -241,26 +241,26 @@ Connection: close"))
               (f str req))))
       (iflet filename (check (string staticdir* op) file-exists&secure?)
         (iflet filetype static-filetype.filename
-          (do (prn (type-header* filetype))
+          (do (prn type-header*.filetype)
               (awhen static-max-age*
                 (prn "Cache-Control: max-age=" it))
               (prn)
-              (w/infile i filename
-                (whilet b (readb i)
+              (w/infile in filename
+                (whilet b readb.in
                   (writeb b str))))
           (respond-err str unknown-msg*))
         (respond-err str unknown-msg*)))))
 
-(def handle-post (i o op args n cooks ctype ip)
+(def handle-post (in out op args clen cooks ctype ip)
   (if srv-noisy* (pr "Post Contents: "))
-  (if (no n)
-    (respond-err o "Post request without Content-Length.")
-    (let body (string:readchars n i)
+  (if (no clen)
+    (respond-err out "Post request without Content-Length.")
+    (let body (string:readchars clen in)
       (if srv-noisy* (pr body "\r\n\r\n"))
-      (respond o op (+ args
-                       (if (~begins downcase.ctype "multipart/form-data")
-                         parseargs.body
-                         (parse-multipart-args multipart-boundary.ctype body)))
+      (respond out op (+ args
+                         (if (~begins downcase.ctype "multipart/form-data")
+                           parseargs.body
+                           (parse-multipart-args multipart-boundary.ctype body)))
                cooks ip))))
 
 (def parse-multipart-args(boundary body)
@@ -437,7 +437,7 @@ Connection: close"))
 ; do is estimate what the max no of fnids can be and set the harvest
 ; limit there-- beyond that the only solution is to buy more memory.
 
-(def harvest-fnids (? n 50000)  ; was 20000
+(def harvest-fnids (? n 50000)
   (when (len> fns* n)
     (pull (fn ((id created lasts))
             (when (> (since created) lasts)
