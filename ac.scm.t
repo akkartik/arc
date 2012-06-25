@@ -811,6 +811,44 @@
   :valueof (unserialize '(a . b))
   :should be '(a . b))
 
+(test-ac "spliceable-list initializes without a list"
+  :valueof (rep:spliceable-list 2)
+  :should be (obj contents nil last nil suffix-len 3 suffix nil))
+
+(test-ac "spliceable-list initializes with a list"
+  :valueof (rep:spliceable-list 2 '(1))
+  :should be (obj contents list.1 last list.1 suffix-len 3 suffix nil))
+
+(arc-eval '(= l (spliceable-list 2 '(1))))
+(test-ac "suffix returns nothing if list is too short"
+  :valueof suffix.l
+  :should be nil)
+
+(arc-eval '(append list.2 l))
+(test-ac "suffix returns list if just long enough"
+  :valueof suffix.l
+  :should be '(1 2))
+(test-ac "appending to spliceable-list works"
+  :valueof rep.l
+  :should be (obj contents '(1 2)  last list.2   suffix nil  suffix-len 3))
+
+(arc-eval '(append list.3 l))
+(test-ac "suffix 3" :valueof suffix.l :should be '(2 3))
+(test-ac "splicing a list without a suffix works"
+  :valueof splice.l
+  :should be '(1))
+
+(arc-eval '(= l (spliceable-list 2 '(1 2 3))))
+(arc-eval '(append list.4 l))
+(test-ac "suffix 4" :valueof suffix.l :should be '(3 4))
+(test-ac "appending to spliceable-list updates suffix"
+  :valueof rep.l
+  :should be (obj contents '(1 2 3 4)  last list.4   suffix '(2 3 4)   suffix-len 3))
+
+(test-ac "splicing a list with suffix works"
+  :valueof splice.l
+  :should be '(1 2))
+
 ;; -----------------------------57651155441074198547161975
 ;; Content-Disposition: form-data; name="fnid"
 ;;

@@ -507,6 +507,11 @@
       :body
         ,@body))
 
+(def lastcdr (xs)
+  (if cdr.xs
+    (lastcdr cdr.xs)
+    xs))
+
 ; Generalization of pair: (tuples x) = (pair x)
 
 (def tuples (xs ? n 2)

@@ -2,6 +2,7 @@
             "state.arc"
             "strings.arc"
             "queue.arc"
+            "spliceable-list.arc"
             "pprint.arc"
             "code.arc"
             "html.arc"
