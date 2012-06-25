@@ -24,8 +24,6 @@
 (def ensure-srvdirs ()
   (map ensure-dir (list arcdir* logdir* staticdir*)))
 
-(= srv-noisy* nil)
-
 (mac wrapper (var . body)
   `(fn params (if params (do ,@body) ,var)))
 
@@ -112,7 +110,6 @@
   (with (nls 0 lines nil line nil responded nil t0 (msec))
     (after
       (whilet c (unless responded readc.in)
-        (if srv-noisy* (pr c))
         (if (is c #\newline)
             (if (is (++ nls) 2)
                 (do
@@ -252,11 +249,9 @@ Connection: close"))
         (respond-err str unknown-msg*)))))
 
 (def handle-post (in out op args clen cooks ctype ip)
-  (if srv-noisy* (pr "Post Contents: "))
   (if (no clen)
     (respond-err out "Post request without Content-Length.")
     (let body (string:readchars clen in)
-      (if srv-noisy* (pr body "\r\n\r\n"))
       (respond out op (+ args
                          (if (~begins downcase.ctype "multipart/form-data")
                            parseargs.body
