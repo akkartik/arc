@@ -207,7 +207,7 @@
 ; Composes in functional position are transformed away by ac.
 
 (mac compose args
-  (let g (uniq)
+  (w/uniq g
     `(fn ,g
        ,((afn (fs)
            (if (cdr fs)
