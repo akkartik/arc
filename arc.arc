@@ -790,9 +790,6 @@
 
 
 
-(def empty (seq)
-  (is len.seq 0))
-
 (defgeneric reclist (f xs)
   (and xs
        (or (f xs)
@@ -1742,6 +1739,14 @@
 
 (defmethod len (x) queue
   (qlen x))
+
+; most types need define just len
+(defgeneric empty (seq)
+  (iso 0 len.seq))
+
+; optimization: empty list is not of type cons
+(defmethod empty (seq) cons
+  nil)
 
 
 
