@@ -113,10 +113,10 @@
 
 (mac w/uniq (names . body)
   (if (acons names)
-      `(with ,(apply + nil (map1 (fn (n) (list n '(uniq)))
+      `(with ,(apply + nil (map1 (fn (n) `(,n (uniq ',n)))
                              names))
          ,@body)
-      `(let ,names (uniq) ,@body)))
+      `(let ,names (uniq ',names) ,@body)))
 
 (mac or args
   (if args
