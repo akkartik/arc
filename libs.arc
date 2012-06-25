@@ -1,6 +1,7 @@
 (map load '("services.arc"
             "state.arc"
             "strings.arc"
+            "queue.arc"
             "pprint.arc"
             "code.arc"
             "html.arc"
