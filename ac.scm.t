@@ -314,6 +314,9 @@
 (aload "arc.arc")
 (aload "libs.arc")
 
+(define (_contain str substr)
+  (_findsubseq substr str))
+
 (test-ac "sym.nil works"
   :valueof sym.nil
   :should be nil)
@@ -709,6 +712,10 @@
 (test-ac "markdown can trim long urls for display"
   :valueof (markdown "http://foo.com" 4)
   :should be "<a href=\"http://foo.com\" rel=\"nofollow\">http...</a>")
+
+(test-ac "markdown handles urls with punctuation"
+  :valueof (markdown "https://en.wikipedia.org/wiki/Sherlock_Holmes_(1984_TV_series)")
+  :should contain "https://en.wikipedia.org/wiki/Sherlock_Holmes_(1984_TV_series)")
 
 (test-ac "markdown segments paragraphs"
   :valueof (markdown "abc\n\ndef")
