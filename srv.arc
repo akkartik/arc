@@ -27,7 +27,8 @@
 (mac wrapper (var . body)
   `(fn params (if params (do ,@body) ,var)))
 
-; http requests currently capped at 2 meg by socket-accept
+; http requests currently capped to upload-limit* bytes
+; see socket-accept
 
 ; should threads process requests one at a time? no, then
 ; a browser that's slow consuming the data could hang the
