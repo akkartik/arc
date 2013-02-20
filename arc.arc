@@ -1006,7 +1006,7 @@
   (car args))
 
 (def prt args
-  (map1 [if _ (disp _)] args)
+  (map1 only.disp args)
   (car args))
 
 (def prn args
