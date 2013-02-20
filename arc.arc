@@ -1021,6 +1021,8 @@
 
 (def int (x ? b 10) (coerce x 'int b))
 
+(def real (x) ($.exact->inexact x))
+
 (mac rand-choice exprs
   `(case (rand ,(len exprs))
      ,@(let key -1
