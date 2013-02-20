@@ -944,14 +944,8 @@
     (unless explicit-flush (flush-output port)))
   ())
 
-(define (ar-display arg port)
-  (display (if (eq? 'num (ar-type arg))
-             (exact->inexact arg)
-             arg)
-           port))
-
 (xdef write (lambda args (printwith write   args)))
-(xdef disp  (lambda args (printwith ar-display args)))
+(xdef disp  (lambda args (printwith display args)))
 
 ; sread = scheme read. eventually replace by writing read
 
