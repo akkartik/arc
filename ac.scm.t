@@ -312,6 +312,15 @@
 (require "brackets.scm")
 (use-bracket-readtable)
 (aload "arc.arc")
+
+(arc-eval '((fn() (mac foo () 34) (mac bar () (foo)))))
+; call to foo inside bar is not macro-expanded yet
+(test-ac "macro calls work after macroexpansion"
+  :valueof (bar)
+  :should be 34)
+
+
+
 (aload "libs.arc")
 
 (define (_contain str substr)
