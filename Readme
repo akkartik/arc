@@ -1,10 +1,12 @@
 Patches welcome! If you have tools you use frequently, send them to arc@akkartik.com
 
 - Features so far
-$ for escaping to scheme
+'$' for escaping to scheme
+http://awwx.ws/defarc for making scheme extensible from arc
+Dynamic scope: http://awwx.ws/implicit
+
 Extensible coerce (rntz; http://arclanguage.org/item?id=9828)
-http://awwx.ws/defarc
-http://awwx.ws/implicit
+Macros can be defined in any order.
 
 Generic functions that read from vtables* and dispatch on the type of the _last_ arg.
 There are 4 refinements regarding what to do when there's no entry in vtables*
