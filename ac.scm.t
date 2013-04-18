@@ -390,6 +390,34 @@
   :valueof (some testify.4 '(1 2 3))
   :should be ())
 
+(test-ac "some 5 - improper lists"
+  :valueof (some odd '(2 4 5 . 6))
+  :should be t)
+
+(test-ac "some 6"
+  :valueof (some testify.6 '(2 4 5 . 6))
+  :should be t)
+
+(test-ac "some 7"
+  :valueof (some testify.7 '(2 4 5 . 6))
+  :should be nil)
+
+(test-ac "mem 1"
+  :valueof (mem 6 '(2 4 5 6 7))
+  :should be '(6 7))
+
+(test-ac "mem 2 - improper lists"
+  :valueof (mem 6 '(2 4 5 6 . 7))
+  :should be '(6 . 7))
+
+(test-ac "mem 3"
+  :valueof (mem 6 '(2 4 5 . 6))
+  :should be 6)
+
+(test-ac "mem 4"
+  :valueof (mem 7 '(2 4 5 . 6))
+  :should be nil)
+
 (test-ac "find 1 - string"
   :valueof (find #\? "a?b")
   :should be #\?)
@@ -406,9 +434,37 @@
   :valueof (find #\? '(1 2))
   :should be ())
 
-(test-ac "find 5"
+(test-ac "find 5 - arbitrary predicate"
   :valueof (find odd '(1 2))
   :should be 1)
+
+(test-ac "find 6"
+  :valueof (find odd '(2 3))
+  :should be 3)
+
+(test-ac "find 7"
+  :valueof (find odd '(3))
+  :should be 3)
+
+(test-ac "find 8"
+  :valueof (find odd '(2))
+  :should be nil)
+
+(test-ac "find 9 - returns first match"
+  :valueof (find odd '(2 3 5))
+  :should be 3)
+
+(test-ac "find 10 - improper lists"
+  :valueof (find 'a '(a b . c))
+  :should be 'a)
+
+(test-ac "find 11"
+  :valueof (find 'c '(a b . c))
+  :should be 'c)
+
+(test-ac "find 12"
+  :valueof (find 'd '(a b . c))
+  :should be nil)
 
 (test-ac "all 1"
   :valueof (all odd '(1 3 5))
@@ -567,6 +623,23 @@
 (test-ac "sumn works"
   :valueof (sumn idfn 0 4)
   :should be 10)
+
+
+
+(test-ac "pushnew 1 - improper lists"
+  :valueof (ret x 3
+             (pushnew 2 x))
+  :should be '(2 . 3))
+
+(test-ac "pushnew 2"
+  :valueof (ret x 3
+             (pushnew 3 x))
+  :should be 3)
+
+(test-ac "pushnew 3"
+  :valueof (ret x '(3)
+             (pushnew nil x))
+  :should be '(nil 3))
 
 (test-ac "firsttime works"
   :valueof (ret counter 0

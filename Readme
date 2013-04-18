@@ -43,3 +43,4 @@ Case can work on lists and other compounds
 5. srv no longer calls setuid. Run it behind apache or nginx, never as root.
 6. thread and new-thread require docstrings, like in autosave-thread in state.arc.
 7. case no longer autoquotes: http://arclanguage.org/item?id=13234
+8. List operations treat non-lists as degenerate dotted lists by default.

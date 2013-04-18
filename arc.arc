@@ -247,7 +247,8 @@
 (def reclist (f xs)
   (and xs
        (or (f xs)
-           (reclist f cdr.xs))))
+           (if acons.xs
+             (reclist f cdr.xs)))))
 
 (mac in (x . choices)
   (w/uniq g
@@ -272,8 +273,10 @@
 (mac case (expr . args)
   `(caselet ,(uniq) ,expr ,@args))
 
+(def carif (x) (if (atom x) x (car x)))
+
 (def some (f seq)
-  (reclist f:car seq))
+  (reclist f:carif seq))
 
 
 
@@ -685,16 +688,14 @@
       (cons x xs)))
 
 (mac pushnew (x place . args)
-  (w/uniq gx
-    (let (binds val setter) (setforms place)
-      `(atwiths ,(+ (list gx x) binds)
-         (,setter (adjoin ,gx ,val ,@args))))))
+  (let (binds val setter) (setforms place)
+    `(atwiths ,binds
+       (,setter (adjoin ,x ,val ,@args)))))
 
 (mac pull (test place)
-  (w/uniq g
-    (let (binds val setter) (setforms place)
-      `(atwiths ,(+ (list g test) binds)
-         (,setter (rem ,g ,val))))))
+  (let (binds val setter) (setforms place)
+    `(atwiths ,binds
+       (,setter (rem ,test ,val)))))
 
 (mac togglemem (x place . args)
   (w/uniq gx
@@ -798,14 +799,15 @@
 (defgeneric reclist (f xs)
   (and xs
        (or (f xs)
-           (reclist f cdr.xs))))
+           (if acons.xs
+             (reclist f cdr.xs)))))
 
 (def all (test seq)
   (~some ~testify.test seq))
 
 (def mem (test seq)
   (let f (testify test)
-    (reclist [if (f:car _) _] seq)))
+    (reclist [if (f:carif _) _] seq)))
 
 (def find (test seq)
   (some [if (testify.test _) _] seq))
@@ -1201,8 +1203,6 @@
       (base tree)
       (f (treewise f base (car tree))
          (treewise f base (cdr tree)))))
-
-(def carif (x) (if (atom x) x (car x)))
 
 ; Could prob be generalized beyond printing.
 
