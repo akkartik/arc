@@ -639,7 +639,7 @@
 (test-ac "pushnew 3"
   :valueof (ret x '(3)
              (pushnew nil x))
-  :should be '(nil 3))
+  :should be (list nil 3))
 
 (test-ac "firsttime works"
   :valueof (ret counter 0
