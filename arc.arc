@@ -91,6 +91,9 @@
 (mac thunk body
   `(fn () ,@body))
 
+(mac as (type x)
+  `(coerce ,x ',type))
+
 (mac ifcall (var)
   `(when (bound ',var)
      (,var)))
@@ -127,6 +130,15 @@
                              names))
          ,@body)
       `(let ,names (uniq ',names) ,@body)))
+
+(mac defextend (name args pred . body)
+  (w/uniq (old allargs)
+    `(let ,old ,name
+       (redef ,name ,allargs
+         (let ,args ,allargs
+           (if ,pred
+             (do ,@body)
+             (apply ,old ,allargs)))))))
 
 (mac or args
   (if args
@@ -206,7 +218,7 @@
   `(let self nil
      (assign self (fn ,parms ,@body))))
 
-(def alist (x) (or (no x) (is (type x) 'cons)))
+(def alist (x) (or (no x) (acons x)))
 
 
 
@@ -544,53 +556,6 @@
     (last cdr.xs)
     (car xs)))
 
-(def transform-last (f xs)
-  (if (cdr xs)
-    (cons car.xs (transform-last f cdr.xs))
-    (list:f car.xs)))
-
-(= vtables* (table))
-(mac genericexpander (coerce-all coerce-back
-                     name args . body)
-  (w/uniq (allargs basefn)
-    `(do
-      (= (vtables* ',name)
-        (let ,basefn (fn ,args ,@body)
-           ; Assume body handles primitives by default. Can be overridden.
-           (obj () ,basefn
-                sym ,basefn
-                char ,basefn
-                int ,basefn
-                num ,basefn
-                cons ,basefn)))
-      (redef ,name ,allargs
-        (aif (aand (vtables* ',name) (it (type:last ,allargs)))
-          (apply it ,allargs)
-          ,(with (last-coercer `(apply ,name (transform-last [coerce _ 'cons] ,allargs))
-                  all-coercer `(apply ,name (map [coerce _ 'cons] ,allargs)))
-             (case (list coerce-all coerce-back)
-               '(nil nil)  last-coercer
-               '(t nil)  all-coercer
-               '(nil t)    `(coerce ,last-coercer (type (last ,allargs)))
-               '(t t)  `(coerce ,all-coercer (type (last ,allargs))))))))))
-
-(mac defgeneric (name args . body)
-  `(genericexpander nil nil ,name ,args ,@body))
-(mac defgeneric* (name args . body)
-  `(genericexpander t nil ,name ,args ,@body))
-
-(mac deftransform (name args . body)
-  `(genericexpander nil t ,name ,args ,@body))
-(mac deftransform* (name args . body)
-  `(genericexpander t t ,name ,args ,@body))
-
-(mac defmethod (name args type . body)
-  `(= ((vtables* ',name) ',type)
-      (fn ,args
-        ,@body)))
-
-
-
 (def assoc (key al)
   (if (atom al)
        nil
@@ -805,11 +770,8 @@
 
 
 
-(defgeneric reclist (f xs)
-  (and xs
-       (or (f xs)
-           (if acons.xs
-             (reclist f cdr.xs)))))
+(defextend reclist (f xs) (isa xs 'string)
+  (reclist f (as cons xs)))
 
 (def all (test seq)
   (~some ~testify.test seq))
@@ -828,10 +790,13 @@
               (self (+ i 1)))))
    start))
 
-(deftransform keep (f seq)
+(def keep (f seq)
   (if (no seq)      nil
       (f car.seq)   (cons car.seq (keep f cdr.seq))
                     (keep f cdr.seq)))
+
+(defextend keep (f seq)  (isa seq 'string)
+  (as string (keep f (as cons seq))))
 
 (def rem (test seq)
   (keep ~testify.test seq))
@@ -860,9 +825,6 @@
 
 (def string args
   (apply + "" (map [coerce _ 'string] args)))
-
-(mac as (type x)
-  `(coerce ,x ',type))
 
 (def flat x
   ((afn (x acc)
@@ -1281,10 +1243,23 @@
 (def write-table (h ? o (stdout))
   (write (tablist h) o))
 
-(deftransform copy (xs)
-  (if (atom xs)
-      xs
-      (cons (car xs) (copy (cdr xs)))))
+(def copy (x)
+  (if (atom x)
+    x
+    (cons (copy car.x)
+          (copy cdr.x))))
+
+(defextend copy (x) (isa x 'string)
+  (ret new (newstring len.x)
+    (forlen i x
+      (= new.i x.i))))
+
+(defextend copy (x . args) (isa x 'table)
+  (ret new (table)
+    (each (k v) x
+      (= new.k copy.v))
+    (each (k v) pair.args
+      (= new.k v))))
 
 (def abs (n)
   (if (< n 0) (- n) n))
@@ -1534,7 +1509,7 @@
   (and ys (cons (car ys)
                 (mappend [list x _] (cdr ys)))))
 
-(defgeneric freq (seq)
+(def freq (seq)
   (ret ans (table)
     (each elem seq
       (++ (ans elem 0)))))
@@ -1710,16 +1685,14 @@
     `(atwiths ,binds
        (or ,val (,setter ,expr)))))
 
-; Could take n args, but have never once needed that.
-(defgeneric* iso (x y)
-  (or (is x y)
-      (and (acons x)
-           (acons y)
-           (iso car.x car.y)
-           (iso cdr.x cdr.y))))
 (alias be iso)
 
-(defmethod iso (x y) table
+; base case for tagged types
+(defextend iso (x y) ($.vector? x)
+  (iso ($.vector->list x)
+       ($.vector->list y)))
+
+(defextend iso (x y) (isa x 'table)
   (and (isa x 'table)
        (isa y 'table)
        (is (len keys.x) (len keys.y))
@@ -1728,23 +1701,30 @@
            (iso y.k v))
          tablist.x)))
 
-;(def len (xs)
-;  (accumulate + [idfn 1] xs 0 cdr no))
-(defgeneric len (x)
-  ($.length x))
+(defextend len (x) (isa x 'cons)
+  (if
+    (acons cdr.x)   (+ 1 (len cdr.x))
+    (no cdr.x)  1
+                2)) ; dotted list
 
-(defmethod len (x) string
+(defextend len (x) (isa x 'sym)
+  0)
+
+(defextend len (x) (isa x 'vector)
+  ($.vector-length x))
+
+(defextend len (x) (isa x 'string)
   ($.string-length x))
 
-(defmethod len (x) table
+(defextend len (x) (isa x 'table)
   ($.hash-table-count x))
 
 ; most types need define just len
-(defgeneric empty (seq)
+(def empty (seq)
   (iso 0 len.seq))
 
-; optimization: empty list is not of type cons
-(defmethod empty (seq) cons
+; optimization: empty list nil is of type sym
+(defextend empty (x) (isa x 'cons)
   nil)
 
 
@@ -1775,50 +1755,58 @@
 
 
 
-(defgeneric serialize (x)
+(def serialize (x)
   x)
 
-(defmethod serialize (x) string
+(defextend serialize (x) (isa x 'string)
   x)
 
-(defmethod serialize (x) cons
-  (map serialize x))
+(defextend serialize (x) (isa x 'cons)
+  (cons (serialize car.x)
+        (serialize cdr.x)))
 
-(defmethod serialize (x) table
-  (list 'table
+(defextend serialize (x) (isa x 'table)
+  (list 'tagged 'table
     (accum a
       (maptable (fn (k v)
                   (a (list k serialize.v)))
                 x))))
 
-; can't use defgeneric; everything is likely a list when serialized
-(or= vtables*!unserialize (table))
 (def unserialize (x)
-  (aif (vtables*!unserialize type*.x)   (it x)
-    (acons x)   (cons (unserialize car.x)
-                      (unserialize cdr.x))
-                x))
+  (if (acons x)
+    (cons (unserialize car.x)
+          (unserialize cdr.x))
+    x))
 
 (def type* (x)
-  (if (and (pair? x)
-           (isa car.x 'sym))
-    car.x
+  (if (and (acons x)
+           (is 'tagged car.x)
+           (is 3 len.x))
+    x.1
     type.x))
 
-(def pair? (l)
-  (and (acons l)
-       (acons:cdr l)
-       (~acons:cddr l)))
+(def isa* (x a)
+  (is a type*.x))
 
-(defmethod unserialize (x) table
+(def rep* (x)
+  (if (and (acons x)
+           (is 'tagged car.x)
+           (is 3 len.x))
+    x.2
+    rep.x))
+
+(defextend unserialize (x) (isa* x 'table)  ; (tagged table ((k1 v1) (k2 v2) ..))
   (w/table h
     (map (fn ((k v)) (= h.k unserialize.v))
-         cadr.x)))
+         rep*.x)))
 
 (def read (? x (stdin) eof nil)
   (if (isa x 'string)
     (w/instring i x (read i eof))
     (unserialize:sread x eof)))
+
+(def write (x ? port (stdout))
+  (swrite serialize.x port))
 
 
 
@@ -1942,16 +1930,7 @@
                        (coerce pair.args 'table)
                        (memtable (map car (keep no:cadr pair.args))))))
 
-(mac extend (name arglist test . body)
-  (w/uniq args
-    `(let orig ,name
-       (= ,name
-          (fn ,args
-            (aif (apply (fn ,arglist ,test) ,args)
-                  (apply (fn ,arglist ,@body) ,args)
-                  (apply orig ,args)))))))
-
-(extend sref (tem v k) (isa tem 'tem)
+(defextend sref (tem v k) (isa tem 'tem)
   (sref rep.tem.1 v k)
   (if v
     (wipe rep.tem.2.k)
@@ -1960,9 +1939,13 @@
 (defcall tem (tem k)
   (or rep.tem.1.k
       (if (no rep.tem.2.k)
-        ((alref (templates* rep.tem.0) k)))))
+        (aif (alref (templates* rep.tem.0) k) (it)))))
 
-(defmethod iso(a b) tem
+(defextend copy (x . args)   ($.vector? x)
+  ; tagged type
+  ($.vector-map copy x))
+
+(defextend iso (a b) (isa a 'tem)
   (and (isa a 'tem)
        (isa b 'tem)
        (iso rep.a rep.b)))

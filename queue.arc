@@ -19,7 +19,7 @@
 (def qlist (qq)
   rep.qq.0)
 
-(defmethod len (qq) queue
+(defextend len (qq) (isa qq 'queue)
   rep.qq.2)
 
 (def enq-limit (val qq ? limit 1000)

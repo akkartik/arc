@@ -578,7 +578,7 @@
 
 (test-ac "serialize works on tables"
   :valueof (serialize (obj 1 2 3 4))
-  :should be '(table ((3 4) (1 2))))
+  :should be '(tagged table ((3 4) (1 2))))
 
 (test-ac "unserialize complements serialize for nil"
   :valueof (unserialize:serialize ())
@@ -592,13 +592,17 @@
   :valueof (unserialize:serialize "abc")
   :should be "abc")
 
+(test-ac "unserialize complements serialize for empty tables"
+  :valueof (unserialize:serialize (table))
+  :should be (table))
+
 (test-ac "unserialize complements serialize for tables"
   :valueof (unserialize:serialize (obj 1 2 3 4))
   :should be (obj 1 2 3 4))
 
 (test-ac "serialize operates on tables inside lists"
   :valueof (serialize `(1 ,(table) 2 3))
-  :should be '(1 (table ()) 2 3))
+  :should be '(1 (tagged table ()) 2 3))
 
 (test-ac "unserialize complements serialize for tables inside lists"
   :valueof (unserialize:serialize `(1 ,(table) 2 3))
@@ -606,7 +610,7 @@
 
 (test-ac "serialize operates on nested tables"
   :valueof (serialize (obj 1 (table) 2 3))
-  :should be '(table ((2 3) (1 (table ())))))
+  :should be '(tagged table ((2 3) (1 (tagged table ())))))
 
 (test-ac "unserialize complements serialize for nested tables"
   :valueof (unserialize:serialize (obj 1 (table) 2 3))

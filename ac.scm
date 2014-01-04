@@ -643,7 +643,7 @@
 
 (define fn-signatures (make-hash-table 'equal))
 
-; This is a replacement for xdef that stores opeator signatures.
+; This is a replacement for xdef that stores operator signatures.
 ; Haven't started using it yet.
 
 (define (odef a parms b)
@@ -952,7 +952,7 @@
     (unless explicit-flush (flush-output port)))
   ())
 
-(xdef write (lambda args (printwith write   args)))
+(xdef swrite (lambda args (printwith write args)))
 (xdef disp  (lambda args (printwith display args)))
 
 ; sread = scheme read. eventually replace by writing read
