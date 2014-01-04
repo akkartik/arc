@@ -1588,6 +1588,13 @@
 (def l (f)
   (load:+ string.f ".arc"))
 
+(def load-just (file name)
+  (w/infile f file
+    (w/uniq eof
+      (whiler e (read f eof) eof
+        (if (is e.1 name)
+          (eval e))))))
+
 (def positive (x)
   (and (number x) (> x 0)))
 
