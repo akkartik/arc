@@ -1,5 +1,8 @@
 Patches welcome! If you have tools you use frequently, send them to arc@akkartik.com
 
+*Important*: If you are running a HN-like site, using this fork will mess up
+your data. Talk to me first, and be sure to make a backup.
+
 - Features so far
 '$' for escaping to scheme
 http://awwx.ws/defarc for making scheme extensible from arc
