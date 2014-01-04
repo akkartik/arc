@@ -79,20 +79,44 @@
   :should be '(a b c d))
 
 (test-scm "keyword-args works"
-  :valueof (keyword-args '(1 2 :a 3) '())
+  :valueof (keyword-args '(1 2 :a 3) '(a))
   :should be '((a . 3)))
 
-(test-scm "keyword-args works with rest args"
+(test-scm "keyword-args works with vararg args"
   :valueof (keyword-args '(1 2 :a 3) 'a)
   :should be '((a 3)))
 
+(test-scm "keyword-args works with rest args"
+  :valueof (keyword-args '(1 2 :b 3) '(a . b))
+  :should be '((b 3)))
+
+(test-scm "keyword-args works with unknown keywords"
+  :valueof (keyword-args '(1 2 :b 3) 'a)
+  :should be '())
+
+(test-scm "keyword-args works with unknown keywords - 2"
+  :valueof (keyword-args '(1 2 :b) 'a)
+  :should be '())
+
 (test-scm "strip-keyword-args works"
-  :valueof (strip-keyword-args '(1 2 :a 3 4) '())
+  :valueof (strip-keyword-args '(1 2 :a 3 4) '(a))
   :should be '(1 2 4))
 
-(test-scm "strip-keyword-args works on rest args"
+(test-scm "strip-keyword-args works on vararg args"
   :valueof (strip-keyword-args '(1 2 :a 3 4) 'a)
   :should be '(1 2))
+
+(test-scm "strip-keyword-args works on rest args"
+  :valueof (strip-keyword-args '(1 2 :b 3 4) '(a . b))
+  :should be '(1 2))
+
+(test-scm "strip-keyword-args works with unknown keywords"
+  :valueof (strip-keyword-args '(1 2 :b 3) 'a)
+  :should be '(1 2 :b 3))
+
+(test-scm "strip-keyword-args works with unknown keywords - 2"
+  :valueof (strip-keyword-args '(1 2 :b) 'a)
+  :should be '(1 2 :b))
 
 (test-scm "optional-params works - 1"
   :valueof (optional-params 'a)
@@ -301,6 +325,14 @@
 (test-ac "call with some named optional and rest args"
   :valueof (foo 3 :c 4 :body 4 5)
   :should be '(() 4 4 5))
+
+(test-ac "call with keyword syms that are not keyword args"
+  :valueof (foo 3 :c 4 :body 4 :x)
+  :should be '(() 4 4 :x))
+
+(test-ac "call with keyword syms that are not keyword args - 2"
+  :valueof (foo 3 :c :x :body 4 5)
+  :should be '(() :x 4 5))
 
 (arc-eval '(assign foo (fn(a ? b 2 c (fn() (+ 1 b)) . body) (c))))
 (test-ac "defaults compile properly"

@@ -33,7 +33,7 @@
 
 (defarc (ac s env)
   (cond ((string? s) (ac-string s env))
-        ((keyword-arg? s) (list 'quote s))
+        ((keyword? s) (list 'quote s))
         ((literal? s) s)
         ((eqv? s 'nil) ())
         ((equal? s '(quote nil)) ())
@@ -307,11 +307,10 @@
          (keyword-alist  (gensym))
          (optional-alist  (optional-params params))
          (params-without-?  (params-without-defaults params))
-         (rest-param  (rest-param params))
          (z  (ac-getargs-exprs params-without-? non-keyword-args keyword-alist optional-alist env)))
     `(lambda ,ra
-       (let ((,non-keyword-args  (strip-keyword-args ,ra ',rest-param))
-             (,keyword-alist   (keyword-args ,ra ',rest-param)))
+       (let ((,non-keyword-args  (strip-keyword-args ,ra ',params))
+             (,keyword-alist   (keyword-args ,ra ',params)))
          (let* ,z
            ,@(ac-body* body (append '(,keyword-alist ,non-keyword-args)
                                     (ac-complex-getargs z) env)))))))
@@ -334,17 +333,17 @@
     (#t   (or (get-arg var (car params) (ar-xcar arglist) keyword-alist)
               (get-arg var (cdr params) (ar-xcdr arglist) keyword-alist)))))
 
-(define (keyword-args args rest-param)
+(define (keyword-args args params)
   (cond
     ((null? args)  ())
     ((not (pair? args))  ())
-    ((keyword-arg? (car args))  (let ((param (keyword-arg->symbol (car args))))
-                                  (cons (cons param
-                                              (if (equal? param rest-param)
-                                                (cdr args)
-                                                (cadr args)))
-                                        (keyword-args (cddr args) rest-param))))
-    (#t   (keyword-args (cdr args) rest-param))))
+    ((keyword-arg? (car args) params)  (let ((param (keyword->symbol (car args))))
+                                         (cons (cons param
+                                                     (if (equal? param (rest-param params))
+                                                       (cdr args)
+                                                       (cadr args)))
+                                               (keyword-args (cddr args) params))))
+    (#t   (keyword-args (cdr args) params))))
 
 (define (rest-param params)
   (cond
@@ -358,13 +357,13 @@
 (define (extract-optional-params params)
   (strip-required (strip-rest params)))
 
-(define (strip-keyword-args args rest-param)
+(define (strip-keyword-args args params)
   (cond
     ((null? args)  ())
-    ((keyword-arg? (car args))  (if (equal? (keyword-arg->symbol (car args)) rest-param)
-                                  ()
-                                  (strip-keyword-args (cddr args) rest-param)))
-    (#t   (cons (car args) (strip-keyword-args (cdr args) rest-param)))))
+    ((keyword-arg? (car args) params)  (if (equal? (keyword->symbol (car args)) (rest-param params))
+                                          ()
+                                          (strip-keyword-args (cddr args) params)))
+    (#t   (cons (car args) (strip-keyword-args (cdr args) params)))))
 
 (define (partition-optional-params oparams)
   (cond
@@ -440,15 +439,24 @@
     (#t (cons (car params)
               (prior-optional-params param (cddr params)))))) ; skip default
 
-(define (keyword-arg? sym)
-  (and (symbol? sym)
-       (let ((s (symbol->string sym)))
-         (and (not (equal? s ""))
-              (eq? #\: (string-ref s 0))))))
+(define (keyword-arg? sym params)
+  (if (symbol? sym)
+    (let ((keyword (keyword->symbol sym)))
+      (or (member keyword (strip-rest params))
+          (eq? keyword (rest-param params))))
+    #f))
 
-(define (keyword-arg->symbol sym)
+(define (keyword? sym)
+  (if (symbol? sym)
+    (let ((s  (symbol->string sym)))
+      (and (not (equal? s ""))
+           (eq? #\: (string-ref s 0))))
+    #f))
+
+(define (keyword->symbol sym)
   (let ((s  (symbol->string sym)))
     (and (not (equal? s ""))
+         (eq? #\: (string-ref s 0))
          (string->symbol (substring s 1)))))
 
 (define (alref key alist)
