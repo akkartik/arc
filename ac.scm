@@ -67,8 +67,8 @@
                                        x))
                                  (codestring s)))
               env)
-          (unescape-ats s))
-      (string-copy s)))          ; avoid immutable strings
+          `(,string-copy ,(unescape-ats s)))
+      `(,string-copy ,s)))          ; avoid immutable strings
 
 (define (literal? x)
   (or (boolean? x)
