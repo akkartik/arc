@@ -1968,7 +1968,7 @@
 
 ; coerce alist to a specific template
 (def listtem (tem fields)
-  (apply inst tem (apply + fields)))
+  (apply inst tem (if fields (apply + fields))))
 
 ; like tablist, but include explicitly-set nil fields
 (def temlist (tem val)
@@ -1979,6 +1979,23 @@
                     templates*.tem)
         (if (assoc k nil-fields)
           (push (list k nil) fields))))))
+
+(def tem-report ()
+  (prn "after writing to file and reading back:")
+  (let value (fn (template init)
+               (if (~is template 'absent)
+                 (deftem foo field template)
+                 (deftem foo))
+               (= x1
+                  (if (~is init 'absent)
+                    (inst 'foo 'field init)
+                    (inst 'foo)))
+               (= x2 (temlist 'foo x1))
+               (= x3 (listtem 'foo x2))
+               x3!field)
+    (each template '(absent nil 1)
+      (each init '(absent nil 2)
+        (prn "  if default was " template " and inst field was " init " => read back " (value template init))))))
 
 
 

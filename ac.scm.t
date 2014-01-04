@@ -900,6 +900,10 @@
   :valueof (listtem 'foo '((new-field 34)))
   :should be (inst 'foo 'new-field 34))
 
+(test-ac "listtem handles nil"
+  :valueof (listtem 'foo nil)
+  :should be (inst 'foo))
+
 (test-ac "temlist and listtem are converses"
   :valueof (listtem 'foo (temlist 'foo (inst 'foo 'field1 34)))
   :should be (inst 'foo 'field1 34))
