@@ -34,6 +34,11 @@
                  `(do (sref sig ',parms ',name)
                       (safeset ,name (fn ,parms ,@body))))))
 
+(assign redef (annotate 'mac
+                (fn (name parms . body)
+                  `(do (sref sig ',parms ',name)
+                       (assign ,name (fn ,parms ,@body))))))
+
 (def caar (xs) (car (car xs)))
 (def cadr (xs) (car (cdr xs)))
 (def cddr (xs) (cdr (cdr xs)))
@@ -71,6 +76,11 @@
               (fn (name parms . body)
                 `(do (sref sig ',parms ',name)
                      (safeset ,name (annotate 'mac (fn ,parms ,@body)))))))
+
+(assign remac (annotate 'mac
+                (fn (name parms . body)
+                  `(do (sref sig ',parms ',name)
+                       (assign ,name (annotate 'mac (fn ,parms ,@body)))))))
 
 (mac when (test . body)
   `(if ,test (do ,@body)))
@@ -323,7 +333,7 @@
 
 (def rev (xs)
   (accumulate xs))
-(def map1 (f xs)
+(redef map1 (f xs)
   (rev:accumulate :over xs :taking f:car))
 (def mapn (f a b)
   (rev:accumulate :over a :taking f :next inc :until [> _ b]))
@@ -480,7 +490,6 @@
 (mac = args
   (expand=list args))
 (= const =)
-(= redef =)
 
 (mac init args
   `(unless (bound ',(car args))
@@ -554,7 +563,7 @@
                 int ,basefn
                 num ,basefn
                 cons ,basefn)))
-      (def ,name ,allargs
+      (redef ,name ,allargs
         (aif (aand (vtables* ',name) (it (type:last ,allargs)))
           (apply it ,allargs)
           ,(with (last-coercer `(apply ,name (transform-last [coerce _ 'cons] ,allargs))
@@ -1884,7 +1893,7 @@
        nil)))
 
 (= defined-variables* (table))
-(def ac-defined-var? (name)
+(redef ac-defined-var? (name)
   (if defined-variables*.name scheme-t scheme-f))
 
 (mac defvar (name impl)
