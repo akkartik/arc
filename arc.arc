@@ -1927,7 +1927,11 @@
 ; (tagged 'tem (tem-type fields nils))
 (def inst (tem-type . args)
   (annotate 'tem (list tem-type
-                       (coerce pair.args 'table)
+                       (let default-vals (map (fn((k v))
+                                           (list k (v)))
+                                         templates*.tem-type)
+                         (coerce (+ default-vals pair.args)
+                                 'table))
                        (memtable (map car (keep no:cadr pair.args))))))
 
 (defextend sref (tem v k) (isa tem 'tem)
@@ -1973,12 +1977,8 @@
 ; like tablist, but include explicitly-set nil fields
 (def temlist (tem val)
   (ret fields (coerce rep.val.1 'cons)
-    (iflet nil-fields (coerce rep.val.2 'cons)
-      (each (k v) (if acons.tem
-                    tem
-                    templates*.tem)
-        (if (assoc k nil-fields)
-          (push (list k nil) fields))))))
+    (each nil-field (coerce rep.val.2 'cons)
+      (push (list car.nil-field nil) fields))))
 
 (def tem-report ()
   (prn "after writing to file and reading back:")
@@ -1996,6 +1996,11 @@
     (each template '(absent nil 1)
       (each init '(absent nil 2)
         (prn "  if default was " template " and inst field was " init " => read back " (value template init))))))
+
+; helper for tests
+(def normalize (tab)
+  (sort (compare < tostring:write)
+        (only.coerce tab 'cons)))
 
 
 

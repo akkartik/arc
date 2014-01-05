@@ -884,9 +884,9 @@
   :valueof (temlist 'foo (inst 'foo 'field1 34))
   :should be '((field1 34)))
 
-(test-ac "temlist skips default fields"
-  :valueof (temlist 'foo (inst 'foo 'new-field 3))
-  :should be '((new-field 3)))
+(test-ac "temlist includes default fields"
+  :valueof (normalize:temlist 'foo (inst 'foo 'new-field 3))
+  :should be '((field1 default) (new-field 3)))
 
 (test-ac "temlist keeps nil non-default fields"
   :valueof (temlist 'foo (inst 'foo 'field1 nil))
@@ -896,9 +896,9 @@
   :valueof (temlist 'foo (inst 'foo 'field1 'default))
   :should be '((field1 default)))
 
-(test-ac "temlist skips unknown nil fields"
-  :valueof (temlist 'foo (inst 'foo 'new-field1 nil 'new-field2 3))
-  :should be '((new-field2 3)))
+(test-ac "temlist includes unknown nil fields"
+  :valueof (normalize:temlist 'foo (inst 'foo 'new-field1 nil 'new-field2 3))
+  :should be '((field1 default) (new-field1 ()) (new-field2 3)))
 
 (test-ac "listtem DOES NOT ignore unknown fields"
   :valueof (listtem 'foo '((new-field 34)))
