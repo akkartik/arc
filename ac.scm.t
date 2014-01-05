@@ -901,6 +901,13 @@
   :valueof f!field1
   :should be 34)
 
+(arc-eval '(= foo2-var 0))
+(arc-eval '(deftem foo2 s (seconds)))
+(arc-eval '(= f2 inst!foo2))
+(test-ac "default vars are persisted"
+  :valueof (iso f2!s (do sleep.1 f2!s))
+  :should be t)
+
 (arc-eval '(= f!field1 nil))
 (test-ac "assigning templates to nil works"
   :valueof f!field1
