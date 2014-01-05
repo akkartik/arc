@@ -1,3 +1,6 @@
+This is an incompatible but cleaner and supported fork of the Arc programming
+language.
+
 Patches welcome! If you have tools you use frequently, send them to arc@akkartik.com
 
 *Important*: If you are running a HN-like site, using this fork will mess up
@@ -37,6 +40,8 @@ Bugfixes:
 Case can work on lists and other compounds
 
 - Incompatibilities and gotchas
+0. temload and temstore are subtly different. If you've been using news.arc
+on your own site, make a backup before switching.
 1. nil == (); type.nil == nil.
 2. Optional args have a new syntax. (a (o b) (o c 3)) => (a ? b nil c 3)
 3. some and keep don't testify.
