@@ -11,25 +11,23 @@ Dynamic scope: http://awwx.ws/implicit
 Extensible coerce (rntz; http://arclanguage.org/item?id=9828)
 Macros can be defined in any order.
 
-Generic functions that read from vtables* and dispatch on the type of the _last_ arg.
-There are 4 refinements regarding what to do when there's no entry in vtables*
-  defgeneric: coerce last arg to cons
-  defgeneric*: coerce _all_ args to cons
-  deftransform: coerce last arg to cons, coerce back to its original type afterward
-  deftransform*: coerce all args to cons, coerce back to original type afterward
-  (Previous discussions: http://arclanguage.org/item?id=11779, http://arclanguage.org/item?id=11865)
-some, all, mem, trues, keep, rem, len, iso are now all generic.
+All functions are generic and can be extended for new conditions
+using 'defextend'.
+  (Previous discussions: http://arclanguage.org/item?id=11779,
+  http://arclanguage.org/item?id=11865, http://arclanguage.org/item?id=13790)
 
-pervasive keyword args. If a function's args are (a b c), (:c 3 1 2) => (1 2 3), etc.
-new arglist syntax. (a b ? c d . e) => c, d are optional, e is a rest/body arg.
+pervasive keyword args. If a function f has params (a b c), (f :c 3 1 2) <=> (f 1 2 3), etc.
+new arglist syntax. (a b ? c c1 d d1 . e) => c and d are optional, with
+defaults c1 and d1 respectively.
 
-transparent persistence using persisted, which can be extended for new
-datatypes by supporting the generics serialize and unserialize.
+transparent persistence using 'persisted', which can be extended for new
+datatypes by supporting the generics 'serialize' and 'unserialize'.
 
 srv:
   parse IP from X-Forwarded-For
   access static subdirectories
   more mime-types, more html attributes, more useful logging
+  correctly sends crlf-terminated lines
 
 Bugfixes:
   readline handles empty lines: http://awwx.ws/readline, http://arclanguage.org/item?id=10830
