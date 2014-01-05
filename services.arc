@@ -41,5 +41,5 @@
 
 (= sleep ($:wrapnil sleep))
 
-(def mktemp(? prefix "arc")
+(def mktemp (? prefix "arc")
   ($ (path->string (make-temporary-file (string-append prefix ".~a")))))

@@ -1028,7 +1028,7 @@
 (mac forlen (var s . body)
   `(for ,var 0 (- (len ,s) 1) ,@body))
 
-(def basename(s)
+(def basename (s)
   (last:tokens s #\/))
 
 (mac on (var s . body)
