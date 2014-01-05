@@ -866,6 +866,10 @@
   :valueof f!field1
   :should be 'default)
 
+(test-ac "reading empty templates works"
+  :valueof inst!foo2!field1
+  :should be nil)
+
 (arc-eval '(= f!field1 34))
 (test-ac "reading and assigning templates works"
   :valueof f!field1
