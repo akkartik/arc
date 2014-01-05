@@ -330,6 +330,8 @@
     ((not (pair? params))   #f)
     ((assoc (car params) keyword-alist)  (get-arg var (cdr params) arglist keyword-alist))
     ((null? arglist)  #f)
+    ((not (pair? arglist))  (begin (err "can't destructure" params arglist)
+                                   #f))
     (#t   (or (get-arg var (car params) (ar-xcar arglist) keyword-alist)
               (get-arg var (cdr params) (ar-xcdr arglist) keyword-alist)))))
 
