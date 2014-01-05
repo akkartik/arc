@@ -3,6 +3,7 @@
             "strings.arc"
             "queue.arc"
             "spliceable-list.arc"
+            "tree.arc"
             "pprint.arc"
             "code.arc"
             "html.arc"

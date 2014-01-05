@@ -13,17 +13,13 @@
   (len (flat (readall (infile file)))))
 
 (def codetree (file)
-  (treewise + (fn (x) 1) (readall (infile file))))
+  (reduce + 1 (leaves (readall infile.file))))
 
 (def code-density (file)
   (/ (codetree file) (codelines file)))
 
 (def tokcount (files)
-  (let counts (table)
-    (each f files
-      (each token (flat (readall (infile f)))
-        (++ (counts token 0))))
-    counts))
+  (counts:mappend flat:readall:infile files))
 
 (def common-tokens (files)
   (sort (compare > cadr)
@@ -54,3 +50,13 @@
 ;(top40 (space-eaters allfiles*))
 
 (mac flatlen args `(len (flat ',args)))
+
+(def code (x)
+  (annotate 'code x))
+
+(defextend walk (seq f) (isa seq 'code)
+  (let x rep.seq
+    (f x)
+    (if (acons x)
+      (each elem x
+        (walk code.elem f)))))

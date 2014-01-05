@@ -350,8 +350,16 @@
 (def mapn (f a b)
   (rev:accumulate :over a :taking f :next inc :until [> _ b]))
 
+; common uses of map
 (def mappend (f . args)
   (apply + nil (apply map f args)))
+
+(def subst (old new seq)
+  (map (fn (_)
+         (if (testify.old _)
+           (if (isa new 'fn) new._ new)
+           _))
+       seq))
 
 (def firstn (n xs)
   (if (no n)            xs
@@ -590,16 +598,27 @@
 (mac repeat (n . body)
   `(for ,(uniq) 1 ,n ,@body))
 
-; could bind index instead of gensym
+(mac forlen (var s . body)
+  `(for ,var 0 (- (len ,s) 1) ,@body))
 
 (mac each (var expr . body)
-  (w/uniq (ga gv)
-    `(iflet ,ga ,expr
-      ((afn (,gv)
-        (when (acons ,gv)
-          (let ,var (car ,gv) ,@body)
-          (self (cdr ,gv))))
-        (coerce ,ga 'cons)))))
+  `(walk ,expr (fn (,var) ,@body)))
+
+(def walk (seq f)
+  ((afn (l)
+     (when acons.l
+       (f car.l)
+       (self cdr.l)))
+   seq))
+
+(defextend walk (seq f) (isa seq 'table)
+  (maptable (fn (k v)
+              (f (list k v)))
+            seq))
+
+(defextend walk (seq f) (isa seq 'string)
+  (forlen i seq
+    (f seq.i)))
 
 ; (nthcdr x y) = (cut y x).
 
@@ -1025,9 +1044,6 @@
                (++ i)))))
       s)))
 
-(mac forlen (var s . body)
-  `(for ,var 0 (- (len ,s) 1) ,@body))
-
 (def basename (s)
   (last:tokens s #\/))
 
@@ -1173,12 +1189,6 @@
 (def sumlist (f xs)
   (accumulate :over xs :starting 0 :taking f:car :folding-with +))
 
-(def treewise (f base tree)
-  (if (atom tree)
-      (base tree)
-      (f (treewise f base (car tree))
-         (treewise f base (cdr tree)))))
-
 ; Could prob be generalized beyond printing.
 
 (def prall (elts ? init "" sep ", ")
@@ -1204,20 +1214,6 @@
                  (range 0 (dec:best > (map len xses))))
     (when strict (let u (best > lens) (= lens (n-of len.lens u))))
     (each xs xses (apply prsn (map pad xs lens)))))
-
-(def tree-subst (old new tree)
-  (if (is tree old)
-       new
-      (atom tree)
-       tree
-      (cons (tree-subst old new (car tree))
-            (tree-subst old new (cdr tree)))))
-
-(def ontree (f tree)
-  (f tree)
-  (unless (atom tree)
-    (ontree f (car tree))
-    (ontree f (cdr tree))))
 
 (def dotted (x)
   (if (atom x)
@@ -1520,9 +1516,6 @@
   (ret ans (table)
     (each x seq
       (++ (ans x 0)))))
-
-(def tree-counts (tree)
-  (counts flat.tree))
 
 (def commonest (seq)
   (best (compare > counts.seq) seq))

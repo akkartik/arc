@@ -636,6 +636,32 @@
   :valueof (map * '(1 2 3) '(1 2 3 4))
   :should be '(1 4 9))
 
+(test-ac "map works with one string"
+  :valueof (map (obj #\a #\m #\b #\n #\c #\o)
+                "abc")
+  :should be "mno")
+
+(test-ac "map works with multiple strings"
+  :valueof (map (fn (a b) (min a b))
+                "dave" "john")
+  :should be "dahe")
+
+(test-ac "subst works on lists"
+  :valueof (subst 1 2 '(1 2 3))
+  :should be '(2 2 3))
+
+(test-ac "subst can take functions"
+  :valueof (rep:subst atom&odd 2 (tree '(1 2 3 (4 5 . 6) . 7)))
+  :should be '(2 2 2 (4 2 . 6) . 2))
+
+(test-ac "subst can take functions - 2"
+  :valueof (rep:subst atom&odd [+ _ 1] (tree '(1 2 3 (4 5 . 6) . 7)))
+  :should be '(2 2 4 (4 6 . 6) . 8))
+
+(test-ac "subst can replace subtrees"
+  :valueof (rep:subst '(1 2) '(3 4) (tree '((1 2) (5 6))))
+  :should be '((3 4) (5 6)))
+
 (test-ac "rev works"
   :valueof (rev '(1 2 (4 5)))
   :should be '((4 5) 2 1))
