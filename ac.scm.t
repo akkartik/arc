@@ -50,15 +50,7 @@
        (display msg)
        (newline)))))
 
-(define (satisfy x f)
-  (f x))
-(xdef satisfy satisfy)
-
 (define be equal?)
-(xdef be be)
-
-(define (idfn x)
-  x)
 
 
 
@@ -205,6 +197,12 @@
 
 
 
+(require "brackets.scm")
+(use-bracket-readtable)
+(aload "arc.arc")
+
+(arc-eval '(def satisfy (x f) (f x)))
+
 (arc-eval '(assign foo (fn args 34)))
 (test-ac "simple varargs fn"
   :valueof (foo 1 2 3)
@@ -340,10 +338,6 @@
   :should be 5)
 
 
-
-(require "brackets.scm")
-(use-bracket-readtable)
-(aload "arc.arc")
 
 (arc-eval '((fn() (mac foo () 34) (mac bar () (foo)))))
 ; call to foo inside bar is not macro-expanded yet
