@@ -201,8 +201,6 @@
 (def register-url (i url)
   (= (url->story* (canonical-url url)) i!id))
 
-; redefined later
-
 (= stemmable-sites* (table))
 
 (def canonical-url (url)
@@ -327,8 +325,6 @@
             (a i)
             (if n (-- n))))))))
 
-; redefined later
-
 (def metastory (i) (and i (in i!type 'story 'poll)))
 
 (def adjust-rank (s ? scorefn frontpage-rank)
@@ -391,8 +387,6 @@
 (= up-url* "grayarrow.gif" down-url* "graydown.gif" logo-url* "arc.png")
 
 (defopr favicon.ico req favicon-url*)
-
-; redefined later
 
 (def gen-css-url ()
   (prn "<link rel=\"stylesheet\" type=\"text/css\" href=\"news.css\">"))
@@ -592,8 +586,6 @@ function vote(node) {
                 style "border:1px #@(hexrep border-color*) solid;")))))
 
 (= toplabels* '(() "welcome" "new" "threads" "comments" "leaders" "*"))
-
-; redefined later
 
 (= welcome-url* "welcome")
 
@@ -1064,8 +1056,6 @@ function vote(node) {
 ; could memoize votelink more, esp for non-logged in users,
 ; since only uparrow is shown; could straight memoize
 
-; redefined later (identically) so the outs catch new vals of up-url, etc.
-
 (def votelink (i user whence dir)
   (tag (a id      (if user (string dir '_ i!id))
           onclick (if user "return vote(this)")
@@ -1133,8 +1123,6 @@ function vote(node) {
     (pr (plural (if (is i!type 'pollopt) (realscore i) i!score)
                 "point")))
   (hook 'itemscore i user))
-
-; redefined later
 
 (def byline (i user)
   (pr " by @(tostring (userlink user i!by)) @(text-age:item-age i) "))
@@ -1385,8 +1373,6 @@ function vote(node) {
       (zap [firstn votewindow* _] (uvar user votes))
       (save-prof user)
       (push (cons i!id vote) recent-votes*))))
-
-; redefined later
 
 (def biased-voter (i vote) nil)
 
@@ -1794,8 +1780,6 @@ function vote(node) {
     (with (r (requests/ip* ip) b (baditemreqs* ip))
        (when (and (> r 500) (> (/ b r) baditem-threshold*))
          (set (throttle-ips* ip))))))
-
-; redefined later
 
 (def news-type (i) (and i (in i!type 'story 'comment 'poll 'pollopt)))
 
@@ -2268,7 +2252,7 @@ function vote(node) {
                 (tdr:prt (only.num (uvar u avg) 2 t t))))
           (if (is i 10) (spacerow 30)))))))
 
-(= leader-threshold* 1)  ; redefined later
+(= leader-threshold* 1)
 
 (def leading-users ()
   (sort (compare > [karma _])
@@ -2279,7 +2263,7 @@ function vote(node) {
          (row (userlink user u)))))
 
 
-(= update-avg-threshold* 0)  ; redefined later
+(= update-avg-threshold* 0)
 
 (defbg update-avg 45
   (unless (or (empty profs*) (no stories*))

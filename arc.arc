@@ -257,7 +257,6 @@
             (apply join (cdr args))
             (cons (car a) (apply join (cdr a) (cdr args)))))))
 
-; bootstrapping version; overloaded later as a generic function
 (def iso (x y)
   (or (is x y)
       (and (acons x)
@@ -265,7 +264,6 @@
            (iso (car x) (car y))
            (iso (cdr x) (cdr y)))))
 
-; bootstrapping version; overloaded later as a generic function
 (def reclist (f xs)
   (and xs
        (or (f xs)
