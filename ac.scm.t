@@ -195,6 +195,18 @@
                        '((2 3 (4 5 6) 7 8)) '((a . 1)))
   :should be 4)
 
+(test-scm "get-arg for missing rest args"
+  :valueof (get-arg 'rest 'rest () ())
+  :should be ())
+
+(test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 1"
+  :valueof (get-arg 'a '(a) () ())
+  :should be #f)
+
+(test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 2"
+  :valueof (get-arg 'e '(a b c e f . d) '(1 2 3) '())
+  :should be #f)
+
 
 
 (require "brackets.scm")
@@ -236,18 +248,6 @@
 (test-ac "destructured args + dotted rest"
   :valueof (foo '(3 4) 5)
   :should be 4)
-
-(test-scm "get-arg for missing rest args"
-  :valueof (get-arg 'rest 'rest () ())
-  :should be ())
-
-(test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 1"
-  :valueof (get-arg 'a '(a) () ())
-  :should be #f)
-
-(test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 2"
-  :valueof (get-arg 'e '(a b c e f . d) '(1 2 3) '())
-  :should be #f)
 
 (arc-eval '(assign foo (fn(a ? b ()) (cons a b))))
 (test-ac "optional param"
