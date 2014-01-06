@@ -327,12 +327,12 @@
   :should be '(() 4 4 5))
 
 (test-ac "call with keyword syms that are not keyword args"
-  :valueof (foo 3 :c 4 :body 4 :x)
-  :should be '(() 4 4 :x))
+  :valueof (foo 3 :c 4 :body 4 :bar)
+  :should be '(() 4 4 :bar))
 
 (test-ac "call with keyword syms that are not keyword args - 2"
-  :valueof (foo 3 :c :x :body 4 5)
-  :should be '(() :x 4 5))
+  :valueof (foo 3 :c :bar :body 4 5)
+  :should be '(() :bar 4 5))
 
 (arc-eval '(assign foo (fn(a ? b 2 c (fn() (+ 1 b)) . body) (c))))
 (test-ac "defaults compile properly"
