@@ -130,82 +130,98 @@
   :should be '((d . e) (f . nil)))
 
 (test-scm "get-arg works for missing arg"
-  :valueof (get-arg 'c 'a 1 ())
+  :valueof (get-arg 'c 'a () 'a 1 ())
   :should be #f)
 
 (test-scm "get-arg works for required args"
-  :valueof (get-arg 'c '(a b c) '(1 2 3) ())
+  :valueof (get-arg 'c '(a b c) () () '(1 2 3) ())
   :should be 3)
 
 (test-scm "get-arg works for varargs"
-  :valueof (get-arg 'a 'a '(1 2 3) ())
+  :valueof (get-arg 'a 'a () 'a '(1 2 3) ())
   :should be '(1 2 3))
 
 (test-scm "get-arg works for rest args"
-  :valueof (get-arg 'd '(a (b c) . d) '(1 (2 3) 4 5 6) ())
+  :valueof (get-arg 'd '(a (b c) . d) () 'd '(1 (2 3) 4 5 6) ())
   :should be '(4 5 6))
 
 (test-scm "get-arg works for destructured args"
-  :valueof (get-arg 'b '(a (b c))
+  :valueof (get-arg 'b '(a (b c)) () ()
                        '(1 (2 3)) ())
   :should be 2)
 
 (test-scm "get-arg works for destructured args - 2"
-  :valueof (get-arg 'f '(a (b c (d e f)))
+  :valueof (get-arg 'f '(a (b c (d e f))) () ()
                        '(1 (2 3 (4 5 6))) ())
   :should be 6)
 
 (test-scm "get-arg works for missing destructured args"
-  :valueof (get-arg 'x '(a (b c (d e f)))
+  :valueof (get-arg 'x '(a (b c (d e f))) () ()
                        '(1 (2 3 (4 5 6))) ())
   :should be #f)
 
 (test-scm "get-arg works for destructuring and rest args"
-  :valueof (get-arg 'g '(a (b c (d e f) . g))
+  :valueof (get-arg 'g '(a (b c (d e f) . g)) () 'g
                        '(1 (2 3 (4 5 6) 7 8)) ())
   :should be '(7 8))
 
 (test-scm "get-arg works for destructuring and rest args - 2"
-  :valueof (get-arg 'f '(a (b c (d e f) . g))
+  :valueof (get-arg 'f '(a (b c (d e f) . g)) () 'g
                        '(1 (2 3 (4 5 6) 7 8)) ())
   :should be 6)
 
 (test-scm "get-arg works for destructuring and rest args - 3"
-  :valueof (get-arg 'x '(a (b c (d e f) . g))
+  :valueof (get-arg 'x '(a (b c (d e f) . g)) () 'g
                        '(1 (2 3 (4 5 6) 7 8)) ())
   :should be #f)
 
 (test-scm "get-arg works for destructuring and rest args - 4"
-  :valueof (get-arg 'f '(a (b c (d e . f) . g))
+  :valueof (get-arg 'f '(a (b c (d e . f) . g)) () 'g
                        '(1 (2 3 (4 5 6 7) 7 8)) ())
   :should be '(6 7))
 
 (test-scm "get-arg works for destructuring and rest args - 5"
-  :valueof (get-arg 'f '(a (b c (d e . f) . g))
+  :valueof (get-arg 'f '(a (b c (d e . f) . g)) () 'g
                        '(1 (2 3 (4 5) 7 8)) ())
   :should be '())
 
 (test-scm "get-arg works for keyword args"
-  :valueof (get-arg 'a '(a (b c (d e f) . g))
+  :valueof (get-arg 'a '(a (b c (d e f) . g)) () 'g
                        '((2 3 (4 5 6) 7 8)) '((a . 1)))
   :should be 1)
 
 (test-scm "get-arg works on args with keywords"
-  :valueof (get-arg 'd '(a (b c (d e f) . g))
+  :valueof (get-arg 'd '(a (b c (d e f) . g)) () 'g
                        '((2 3 (4 5 6) 7 8)) '((a . 1)))
   :should be 4)
 
 (test-scm "get-arg for missing rest args"
-  :valueof (get-arg 'rest 'rest () ())
+  :valueof (get-arg 'rest 'rest () 'rest () ())
   :should be ())
 
 (test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 1"
-  :valueof (get-arg 'a '(a) () ())
+  :valueof (get-arg 'a '(a) () () () ())
   :should be #f)
 
 (test-scm "get-arg returns an illegal literal for missing, hopefully optional, params - 2"
-  :valueof (get-arg 'e '(a b c e f . d) '(1 2 3) '())
+  :valueof (get-arg 'e '(a b c e f . d) () 'd '(1 2 3) ())
   :should be #f)
+
+(test-scm "get-arg skips optional params when rest param is present"
+  :valueof (get-arg 'e '(a b c e f . d) '(e f) 'd '(1 2 3 4 5 6 7) ())
+  :should be #f)
+
+(test-scm "get-arg gets optional params from keyword args when rest param is present"
+  :valueof (get-arg 'e '(a b c e f . d) '(e f) 'd '(1 2 3 4 5 6 7) '((e . 23)))
+  :should be 23)
+
+(test-scm "get-arg gets rest param after optionals"
+  :valueof (get-arg 'd '(a b c e f . d) '(e f) 'd '(1 2 3 4 5 6 7) ())
+  :should be '(4 5 6 7))
+
+(test-scm "get-arg gets rest param after destructured optionals"
+  :valueof (get-arg 'c '((a ? b () . c)) () () '((1 2 3)) ())
+  :should be '(2 3))
 
 
 
@@ -313,7 +329,7 @@
   :should be '(3 3))
 
 (test-ac "optional + named rest args - 2"
-  :valueof (foo 2 4 :c 3)
+  :valueof (foo 2 :b 4 :c 3)
   :should be '(4 3))
 
 (test-ac "optional + named rest args - 3"
@@ -321,9 +337,9 @@
   :should be '(4 3))
 
 (arc-eval '(assign foo (fn(a ? b () c 3 . body) (cons b (cons c body)))))
-(test-ac "call with some optional and rest args without naming"
-  :valueof (foo 3 4 :body 4 5)
-  :should be '(4 3 4 5))
+(test-ac "call with unnamed optional args gives precedence to rest params"
+  :valueof (foo 23 24 25)
+  :should be '(() 3 24 25))
 
 (test-ac "call with some named optional and rest args"
   :valueof (foo 3 :c 4 :body 4 5)
@@ -714,7 +730,7 @@
 (test-ac "updating doesn't update unnecessarily"
   :valueof (ret counter 0
              (let a 0
-               (updating a 0
+               (updating a :with 0
                   :body
                     ++.counter)))
   :should be 0)
@@ -730,16 +746,16 @@
 (test-ac "updating works with condition"
   :valueof (ret counter 0
              (let a 0
-               (updating a :unless >= 1
+               (updating a :with 1 :unless >=
                   :body
                     ++.counter)
-               (updating a :unless >= 1
+               (updating a :with 1 :unless >=
                   :body
                     ++.counter)
-               (updating a :unless >= 3
+               (updating a :with 3 :unless >=
                   :body
                     ++.counter)
-               (updating a :unless >= 2
+               (updating a :with 3 :unless >=
                   :body
                     ++.counter)))
     :should be 2)

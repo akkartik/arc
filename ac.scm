@@ -306,8 +306,9 @@
          (non-keyword-args   (gensym))
          (keyword-alist  (gensym))
          (optional-alist  (optional-param-alist params))
+         (optional-params (map car optional-alist))
          (params-without-?  (params-without-defaults params))
-         (z  (ac-getargs-exprs params-without-? non-keyword-args keyword-alist optional-alist env)))
+         (z  (ac-getargs-exprs params-without-? optional-params non-keyword-args keyword-alist optional-alist env)))
     `(lambda ,ra
        (let ((,non-keyword-args  (strip-keyword-args ,ra ',params))
              (,keyword-alist   (keyword-args ,ra ',params)))
@@ -315,28 +316,30 @@
            ,@(ac-body* body (append '(,keyword-alist ,non-keyword-args)
                                     (ac-complex-getargs z) env)))))))
 
-(define (ac-getargs-exprs params non-keyword-args keyword-alist optional-alist env)
+(define (ac-getargs-exprs params optional-params non-keyword-args keyword-alist optional-alist env)
   (map (lambda (param)
           (list param
-                `(or (get-arg ',param ',params ,non-keyword-args ,keyword-alist)
+                `(or (get-arg ',param ',params ',optional-params ',(rest-param params) ,non-keyword-args ,keyword-alist)
                      ,(ac (alref param optional-alist) (append (prior-params param params) env)))))
        (vars-in-paramlist params)))
 
-(define (get-arg var params arglist keyword-alist)
+(define (get-arg var params optionals rest arglist keyword-alist)
   (cond
     ((assoc var keyword-alist)  (alref var keyword-alist))
     ((null? params)  #f)
     ((equal? params var)  arglist)
     ((not (pair? params))   #f)
-    ((assoc (car params) keyword-alist)  (get-arg var (cdr params) arglist keyword-alist))
+    ((assoc (car params) keyword-alist)  (get-arg var (cdr params) optionals rest arglist keyword-alist))
+    ((and (member var optionals) (not (null? rest)))  #f)
+    ((and (member (car params) optionals) (not (null? rest)))  (get-arg var rest optionals rest arglist keyword-alist))
     ; destructured optional params
-    ((equal? (car params) '?)  (get-arg var (vars-in-optional-paramlist (cdr params))
+    ((equal? (car params) '?)  (get-arg var (vars-in-optional-paramlist (cdr params)) optionals rest
                                         arglist keyword-alist))
     ((null? arglist)  #f)
     ((not (pair? arglist))  (begin (err "can't destructure" params arglist)
                                    #f))
-    (#t   (or (get-arg var (car params) (ar-xcar arglist) keyword-alist)
-              (get-arg var (cdr params) (ar-xcdr arglist) keyword-alist)))))
+    (#t   (or (get-arg var (params-without-defaults (car params)) (map car (optional-param-alist (car params))) (rest-param (car params)) (ar-xcar arglist) keyword-alist)
+              (get-arg var (cdr params) optionals rest (ar-xcdr arglist) keyword-alist)))))
 
 (define (keyword-args args params)
   (cond
