@@ -1028,6 +1028,6 @@
   :should be `(("a" ,(obj "contents" "34")) ("b" ,(obj "contents" "209"))))
 
 ; currently fails; how to include binary data in string literals?
-(test-ac "parse-multipart-args returns lists of ints for non-ascii data"
+(test-ac "currently failing: parse-multipart-args returns lists of ints for non-ascii data"
   :valueof (parse-multipart-args "--abc" (instring "\r\n--abc\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\n34\r\n--abc\r\nContent-Disposition: form-data; name=\"b\"\r\n\r\n\x80\r\n--abc--\r\n"))
   :should be `(("a" ,(obj "contents" "34")) ("b" ,(obj "contents" list.128)))) ; \x80 in decimal
