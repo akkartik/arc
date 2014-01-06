@@ -305,7 +305,7 @@
   (let* ((ra   (gensym))
          (non-keyword-args   (gensym))
          (keyword-alist  (gensym))
-         (optional-alist  (optional-params params))
+         (optional-alist  (optional-param-alist params))
          (params-without-?  (params-without-defaults params))
          (z  (ac-getargs-exprs params-without-? non-keyword-args keyword-alist optional-alist env)))
     `(lambda ,ra
@@ -355,8 +355,8 @@
     ((not (pair? params))   params)
     (#t   (rest-param (cdr params)))))
 
-(define (optional-params params)
-  (partition-optional-params (extract-optional-params params)))
+(define (optional-param-alist params)
+  (partition-optional-param-alist (extract-optional-params params)))
 
 (define (extract-optional-params params)
   (strip-required (strip-rest params)))
@@ -369,13 +369,13 @@
                                           (strip-keyword-args (cddr args) params)))
     (#t   (cons (car args) (strip-keyword-args (cdr args) params)))))
 
-(define (partition-optional-params oparams)
+(define (partition-optional-param-alist oparams)
   (cond
     ((not (pair? oparams))  ())
     ((not (pair? (cdr oparams)))  (list oparams))
     (#t   (cons (cons (car oparams)
                       (cadr oparams))
-                (partition-optional-params (cddr oparams))))))
+                (partition-optional-param-alist (cddr oparams))))))
 
 (define (strip-required params)
   (if (pair? params)

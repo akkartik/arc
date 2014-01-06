@@ -110,23 +110,23 @@
   :valueof (strip-keyword-args '(1 2 :b) 'a)
   :should be '(1 2 :b))
 
-(test-scm "optional-params works - 1"
-  :valueof (optional-params 'a)
+(test-scm "optional-param-alist works - 1"
+  :valueof (optional-param-alist 'a)
   :should be '())
-(test-scm "optional-params 1"
-  :valueof (optional-params '(a b c))
+(test-scm "optional-param-alist 1"
+  :valueof (optional-param-alist '(a b c))
   :should be '())
-(test-scm "optional-params 2"
-  :valueof (optional-params '(a b c ? d e))
+(test-scm "optional-param-alist 2"
+  :valueof (optional-param-alist '(a b c ? d e))
   :should be '((d . e)))
-(test-scm "optional-params 3"
-  :valueof (optional-params '(a b c ? d e f))
+(test-scm "optional-param-alist 3"
+  :valueof (optional-param-alist '(a b c ? d e f))
   :should be '((d . e) (f)))
-(test-scm "optional-params 4"
-  :valueof (optional-params '(a b c ? d e f nil))
+(test-scm "optional-param-alist 4"
+  :valueof (optional-param-alist '(a b c ? d e f nil))
   :should be '((d . e) (f . nil)))
-(test-scm "optional-params 5"
-  :valueof (optional-params '(a b c ? d e f nil . g))
+(test-scm "optional-param-alist 5"
+  :valueof (optional-param-alist '(a b c ? d e f nil . g))
   :should be '((d . e) (f . nil)))
 
 (test-scm "get-arg works for missing arg"
