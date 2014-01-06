@@ -25,7 +25,7 @@
     ((test msg :valueof expr :should predicate args ...)
      (let ((got (arc-eval 'expr))
            (ans (arc-eval '(predicate expr args ...))))
-       (if (ac-false? ans)
+       (if (ac-true? ans)
          (begin
            (display ". ")
            (display msg)
@@ -37,6 +37,10 @@
            (display "  got ")
            (display got)
            (newline)))))))
+
+(define (ac-true? x)
+  (and x
+       (not (eq? x ()))))
 
 (define-syntax pending
   (syntax-rules(:valueof :should)
@@ -55,10 +59,6 @@
 
 (define (idfn x)
   x)
-
-(define (ac-false? x)
-  (or (not x)
-      (not (eq? x ()))))
 
 
 
