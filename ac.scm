@@ -329,6 +329,8 @@
     ((equal? params var)  arglist)
     ((not (pair? params))   #f)
     ((assoc (car params) keyword-alist)  (get-arg var (cdr params) arglist keyword-alist))
+    ((equal? (car params) '?)  (get-arg var (vars-in-optional-paramlist (cdr params))
+                                        arglist keyword-alist))
     ((null? arglist)  #f)
     ((not (pair? arglist))  (begin (err "can't destructure" params arglist)
                                    #f))

@@ -297,6 +297,11 @@
   :valueof (foo 3 nil 2)
   :should be '(() . 2))
 
+(arc-eval '(assign foo (fn((a ? b ())) (cons a b))))
+(test-ac "destructured args can also be optional"
+  :valueof (foo '(3 4))
+  :should be '(3 . 4))
+
 (arc-eval '(assign foo (fn(a . b) b)))
 (test-ac "rest args can be named"
   :valueof (foo 3 :b 4 5)
