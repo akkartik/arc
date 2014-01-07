@@ -90,6 +90,10 @@
   :valueof (keyword-args '(1 2 :b) 'a)
   :should be '())
 
+(test-scm "keyword-args works inside destructured lists"
+  :valueof (keyword-args '((1 :a 2)) 'a)
+  :should be '((a 2)))
+
 (test-scm "strip-keyword-args works"
   :valueof (strip-keyword-args '(1 2 :a 3 4) '(a))
   :should be '(1 2 4))
@@ -102,6 +106,14 @@
   :valueof (strip-keyword-args '(1 2 :b 3 4) '(a . b))
   :should be '(1 2))
 
+(test-scm "strip-keyword-args works on destructured args"
+  :valueof (strip-keyword-args '((1 2 :b 3 4)) '((a b)))
+  :should be '((1 2 4)))
+
+(test-scm "strip-keyword-args works on destructured rest args"
+  :valueof (strip-keyword-args '((1 2 :b 3 4)) '((a . b)))
+  :should be '((1 2)))
+
 (test-scm "strip-keyword-args works with unknown keywords"
   :valueof (strip-keyword-args '(1 2 :b 3) 'a)
   :should be '(1 2 :b 3))
@@ -109,6 +121,16 @@
 (test-scm "strip-keyword-args works with unknown keywords - 2"
   :valueof (strip-keyword-args '(1 2 :b) 'a)
   :should be '(1 2 :b))
+
+(test-scm "strip-keyword-args works with unknown keywords - 2"
+  :valueof (strip-keyword-args '(1 2 :b) 'a)
+  :should be '(1 2 :b))
+
+(let ((args '(1 2 3)))
+  ; hacky attempt at not breaking mutating functions; see ac-fn
+  (test-scm "strip-keyword-args returns unchanged arg list when keywords are absent"
+    :valueof (strip-keyword-args args 'a)
+    :should eq? args))
 
 (test-scm "optional-param-alist works - 1"
   :valueof (optional-param-alist 'a)
@@ -586,6 +608,60 @@
 (test-ac "each works on nil"
   :valueof (each x () x)
   :should be ())
+
+(test-ac "each works when treating lists as trees"
+  :valueof (accum acc
+             (each x (tree '(1 2 (3 4)))
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               (2 (3 4))
+               2
+               ((3 4))
+               (3 4)
+               3
+               (4)
+               4
+               ()
+               ()))
+
+(test-ac "each works when treating lists as trees - 2"
+  :valueof (accum acc
+             (each x '(1 2 (3 4)) :like 'tree
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               (2 (3 4))
+               2
+               ((3 4))
+               (3 4)
+               3
+               (4)
+               4
+               ()
+               ()))
+
+(test-ac "each works when treating lists as code"
+  :valueof (accum acc
+             (each x (code '(1 2 (3 4)))
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               2
+               (3 4)
+               3
+               4))
+
+(test-ac "each works when treating lists as code - 2"
+  :valueof (accum acc
+             (each x '(1 2 (3 4)) :like 'code
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               2
+               (3 4)
+               3
+               4))
 
 (test-ac "serialize works on nil"
   :valueof (serialize ())

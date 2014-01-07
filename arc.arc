@@ -17,6 +17,10 @@
 ;  not sure this is a mistake; strings may be subtly different from
 ;  lists of chars
 
+;? (assign q '(1 2 3))
+;? ((fn (g1162) (disp (is q g1162)) (scar g1162 34)) q)
+;? (disp q)($.newline)
+;? ($.exit)
 
 (assign do (annotate 'mac
              (fn args `((fn () ,@args)))))
@@ -534,8 +538,7 @@
 
 (mac firsttime (place . body)
   `(updating ,place
-      :body
-        ,@body))
+      ,@body))
 
 (def lastcdr (xs)
   (if cdr.xs
@@ -599,22 +602,22 @@
 (mac forlen (var s . body)
   `(for ,var 0 (- (len ,s) 1) ,@body))
 
-(mac each (var expr . body)
-  `(walk ,expr (fn (,var) ,@body)))
+(mac each (var expr ? like nil . body)
+  `(walk ,expr :like ,like (fn (,var) ,@body)))
 
-(def walk (seq f)
+(def walk (seq f ? like nil)
   ((afn (l)
      (when acons.l
        (f car.l)
        (self cdr.l)))
    seq))
 
-(defextend walk (seq f) (isa seq 'table)
+(defextend walk (seq f ? like nil) (isa seq 'table)
   (maptable (fn (k v)
               (f (list k v)))
             seq))
 
-(defextend walk (seq f) (isa seq 'string)
+(defextend walk (seq f ? like nil) (isa seq 'string)
   (forlen i seq
     (f seq.i)))
 

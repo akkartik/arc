@@ -54,7 +54,7 @@
 (def code (x)
   (annotate 'code x))
 
-(defextend walk (seq f) (isa seq 'code)
+(defextend walk (seq f ? like nil) (or (isa seq 'code) (iso like 'code))
   (let x rep.seq
     (f x)
     (if (acons x)
