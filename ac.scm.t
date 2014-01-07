@@ -70,6 +70,18 @@
   :valueof (vars-in-paramlist '(a ? b 2 c 3 . d))
   :should be '(a b c d))
 
+(test-scm "contains-keyword-arg? - 1"
+  :valueof (contains-keyword-arg? '(1 2 3) '(a b))
+  :should be #f)
+
+(test-scm "contains-keyword-arg? - 2"
+  :valueof (contains-keyword-arg? '(1 :a 2 3) '(a b))
+  :should be #t)
+
+(test-scm "contains-keyword-arg? - 3"
+  :valueof (contains-keyword-arg? '(1 (:a 2) 3) '(a b))
+  :should be #f)
+
 (test-scm "keyword-args works"
   :valueof (keyword-args '(1 2 :a 3) '(a))
   :should be '((a . 3)))
@@ -106,6 +118,46 @@
   :valueof (keyword-args '(:a 3) '((a b)))
   :should be '())
 
+(test-scm "strip-keyword-args-shallow works"
+  :valueof (strip-keyword-args-shallow '(1 2 :a 3 4) '(a))
+  :should be '(1 2 4))
+
+(test-scm "strip-keyword-args-shallow works on vararg args"
+  :valueof (strip-keyword-args-shallow '(1 2 :a 3 4) 'a)
+  :should be '(1 2))
+
+(test-scm "strip-keyword-args-shallow works on rest args"
+  :valueof (strip-keyword-args-shallow '(1 2 :b 3 4) '(a . b))
+  :should be '(1 2))
+
+(test-scm "strip-keyword-args-shallow skips destructured args"
+  :valueof (strip-keyword-args-shallow '((1 2 :b 3 4)) '((a b)))
+  :should be '((1 2 :b 3 4)))
+
+(test-scm "strip-keyword-args-shallow skips unknown keywords"
+  :valueof (strip-keyword-args-shallow '(1 2 :b 3) 'a)
+  :should be '(1 2 :b 3))
+
+(test-scm "strip-keyword-args-shallow skips unknown keywords - 2"
+  :valueof (strip-keyword-args-shallow '(1 2 :b) 'a)
+  :should be '(1 2 :b))
+
+(let ((args '(1 2 3)))
+  ; hacky attempt at not breaking mutating functions; see ac-fn
+  (test-scm "strip-keyword-args-shallow returns unchanged arg list when keywords are absent"
+    :valueof (strip-keyword-args-shallow args 'a)
+    :should eq? args))
+
+(let ((args '((1 :a 2))))
+  (test-scm "strip-keyword-args-shallow returns unchanged arg list when keywords are absent"
+    :valueof (strip-keyword-args-shallow args '(a b))
+    :should eq? args))
+
+(let ((args '(1 :c 2)))
+  (test-scm "strip-keyword-args-shallow returns unchanged arg list when keywords are absent - 2"
+    :valueof (strip-keyword-args-shallow args '(a (b c)))
+    :should eq? args))
+
 (test-scm "strip-keyword-args works"
   :valueof (strip-keyword-args '(1 2 :a 3 4) '(a))
   :should be '(1 2 4))
@@ -126,11 +178,11 @@
   :valueof (strip-keyword-args '((1 2 :b 3 4)) '((a . b)))
   :should be '((1 2)))
 
-(test-scm "strip-keyword-args works with unknown keywords"
+(test-scm "strip-keyword-args skips unknown keywords"
   :valueof (strip-keyword-args '(1 2 :b 3) 'a)
   :should be '(1 2 :b 3))
 
-(test-scm "strip-keyword-args works with unknown keywords - 2"
+(test-scm "strip-keyword-args skips unknown keywords - 2"
   :valueof (strip-keyword-args '(1 2 :b) 'a)
   :should be '(1 2 :b))
 
@@ -138,6 +190,16 @@
   ; hacky attempt at not breaking mutating functions; see ac-fn
   (test-scm "strip-keyword-args returns unchanged arg list when keywords are absent"
     :valueof (strip-keyword-args args 'a)
+    :should eq? args))
+
+(let ((args '((1 :a 2))))
+  (test-scm "strip-keyword-args returns unchanged arg list when keywords are absent"
+    :valueof (strip-keyword-args args '(a b))
+    :should eq? args))
+
+(let ((args '(1 :c 2)))
+  (test-scm "strip-keyword-args returns unchanged arg list when keywords are absent - 2"
+    :valueof (strip-keyword-args args '(a (b c)))
     :should eq? args))
 
 (test-scm "optional-param-alist works - 1"

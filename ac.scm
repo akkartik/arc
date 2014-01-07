@@ -449,6 +449,19 @@
     (#t (cons (car params)
               (prior-optional-params param (cddr params)))))) ; skip default
 
+(define (strip-keyword-args-shallow args params)
+  ; replacing args will cause mutations to fail. do so over as restricted an
+  ; area as possible.
+  (if (not (contains-keyword-arg? args params))
+    args
+    (cond
+      ((null? args)  ())
+      ((not (pair? args))  args)
+      ((keyword-arg? (car args) (rest-param params))  ())
+      ((keyword-arg? (car args) (strip-rest params))  (strip-keyword-args-shallow (cddr args) params))
+      (#t  (cons (car args)
+                 (strip-keyword-args-shallow (cdr args) params))))))
+
 (define (strip-keyword-args args params)
   ; replacing args will cause mutations to fail. do so over as restricted an
   ; area as possible.
@@ -470,11 +483,10 @@
 (define (contains-keyword-arg? args params)
   (cond
     ((null? args)  #f)
-    ; todo: flatten here is a hack; correctly handle destructuring
-    ((keyword-arg? args (flatten params))  #t)
+    ((keyword-arg? args params)  #t)
     ((not (pair? args))  #f)
-    (#t  (or (contains-keyword-arg? (car args) params)
-             (contains-keyword-arg? (cdr args) params)))))
+    ((keyword-arg? (car args) params)  #t)
+    (#t  (contains-keyword-arg? (cdr args) params))))
 
 (define (keyword-arg? sym params)
   (if (symbol? sym)
