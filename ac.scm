@@ -319,24 +319,29 @@
          (param-names  (params-without-defaults original-params)))
     (map (lambda (param)
             (list param
-                  `(or (get-arg ',param ',param-names ',optional-params ',(rest-param original-params) ,non-keyword-args ,keyword-alist)
+                  `(or ;(begin (display 111)(display ',param)(display " ")(display ',original-params)(newline) #f)
+                       (get-arg ',param ',original-params ',param-names ',optional-params ',(rest-param original-params) ,non-keyword-args ,keyword-alist)
+                       ;(begin (display 112)(display ',param)(display " ")(display ',original-params)(newline) #f)
                        ,(ac (alref param optional-alist) (append (prior-params param param-names) env)))))
+;?          (begin (display 120)(newline)
          (vars-in-paramlist param-names))))
+;)
 
-(define (get-arg var params optionals rest arglist keyword-alist)
+(define (get-arg var original-params params optionals rest arglist keyword-alist)
   (cond
     ((assoc var keyword-alist)  (alref var keyword-alist))
     ((null? params)  #f)
     ((equal? params var)  arglist)
     ((not (pair? params))   #f)
-    ((assoc (car params) keyword-alist)  (get-arg var (cdr params) optionals rest arglist keyword-alist))
+    ((assoc (car params) keyword-alist)  (get-arg var original-params (cdr params) optionals rest arglist keyword-alist))
     ((and (member var optionals) (not (null? rest)))  #f)
-    ((and (member (car params) optionals) (not (null? rest)))  (get-arg var rest optionals rest arglist keyword-alist))
+    ((and (member (car params) optionals) (not (null? rest)))  (get-arg var original-params rest optionals rest arglist keyword-alist))
+    ((and (equal? var (car params)) (member var optionals))  (default-value var original-params))
     ((null? arglist)  #f)
     ((not (pair? arglist))  (begin (err "can't destructure" params arglist)
                                    #f))
-    (#t   (or (get-arg var (params-without-defaults (car params)) (map car (optional-param-alist (car params))) (rest-param (car params)) (ar-xcar arglist) keyword-alist)
-              (get-arg var (cdr params) optionals rest (ar-xcdr arglist) keyword-alist)))))
+    (#t   (or (get-arg var (car params) (params-without-defaults (car params)) (map car (optional-param-alist (car params))) (rest-param (car params)) (ar-xcar arglist) keyword-alist)
+              (get-arg var original-params (cdr params) optionals rest (ar-xcdr arglist) keyword-alist)))))
 
 (define (keyword-args args params)
   (cond
@@ -443,6 +448,21 @@
     ((equal? param (car params))  ())
     (#t (cons (car params)
               (prior-optional-params param (cddr params)))))) ; skip default
+
+(define (default-value param params)
+  (cond
+    ((null? params)  ())  ; not found
+    ((equal? param params)  ())  ; rest param has no default
+    ((equal? param (car params))  ())  ; required param has no default
+    ((equal? (car params) '?)  (default-value-in-optional param (cdr params)))
+    (#t  (default-value param (cdr params)))))
+
+(define (default-value-in-optional param params)
+  (cond
+    ((null? params)  ())
+    ((not (pair? params))  ())
+    ((equal? param (car params))  (cadr params))
+    (#t  (default-value-in-optional param (cddr params)))))
 
 (define (keyword-arg? sym params)
   (if (symbol? sym)
@@ -1185,6 +1205,7 @@
 
 (define (aload1 p)
   (let ((x (read p)))
+    (display "- ")(display x)(newline)
     (if (eof-object? x)
         #t
         (begin
