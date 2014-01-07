@@ -377,7 +377,8 @@
     ((keyword-arg? (car args) params)  (if (equal? (keyword->symbol (car args)) (rest-param params))
                                           ()
                                           (strip-keyword-args (cddr args) params)))
-    (#t   (cons (car args) (strip-keyword-args (cdr args) params)))))
+    (#t   (cons (car args)
+                (strip-keyword-args (cdr args) params)))))
 
 (define (partition-optional-param-alist oparams)
   (cond
@@ -446,7 +447,6 @@
               (prior-optional-params param (cddr params)))))) ; skip default
 
 (define (keyword-arg? sym params)
-
   (if (symbol? sym)
     (let ((keyword (keyword->symbol sym)))
       (or (member keyword (strip-rest params))
