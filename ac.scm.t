@@ -393,7 +393,7 @@
   :valueof ((fn ((a ? b 34)) (list a b)) '(3))
   :should be '(3 34))
 
-(pending "destructured keywords"
+(test-ac "destructured keywords"
   :valueof ((fn ((a ? b 34)) (list a b)) '(2 :a 3))
   :should be '(3 2))
 
