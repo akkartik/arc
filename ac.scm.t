@@ -241,6 +241,10 @@
   :valueof (get-arg 'd '(a b c e f . d) '(e f) 'd '(1 2 3 4 5 6 7) ())
   :should be '(4 5 6 7))
 
+(test-scm "get-arg gets rest param after optionals from keyword arg"
+  :valueof (get-arg 'd '(a b c e f . d) '(e f) 'd '(1 2 3) '((d 4 5 6 7)))
+  :should be '(4 5 6 7))
+
 (test-scm "get-arg gets rest param after destructured optionals"
   :valueof (get-arg 'c '((a ? b () . c)) () () '((1 2 3)) ())
   :should be '(2 3))
@@ -362,6 +366,11 @@
 (test-ac "call with unnamed optional args gives precedence to rest params"
   :valueof (foo 23 24 25)
   :should be '(() 3 24 25))
+
+(arc-eval '(assign foo (fn(a ? b () c 3 . body) (cons b (cons c body)))))
+(test-ac "call with unnamed optional args can take handle rest keyword arg"
+  :valueof (foo :body 23 24 25)
+  :should be '(() 3 23 24 25))
 
 (test-ac "call with some named optional and rest args"
   :valueof (foo 3 :c 4 :body 4 5)
@@ -811,6 +820,18 @@
                   ++.counter)))
   :should be 1)
 
+(arc-eval '(do
+  (disp 111)
+  (with (a 0 counter 0)
+    (disp 112)
+    (disp ;:macex1:quote
+      (updating a
+         :body
+           (++ counter)))
+    (disp a)
+  )))
+(newline)
+
 (test-ac "updating doesn't update unnecessarily"
   :valueof (ret counter 0
              (let a 0
@@ -823,25 +844,20 @@
   :valueof (ret counter 0
              (let a 0
                (updating a 1
-                  :body
-                    ++.counter)))
+                  ++.counter)))
   :should be 1)
 
 (test-ac "updating works with condition"
   :valueof (ret counter 0
              (let a 0
                (updating a :with 1 :unless >=
-                  :body
-                    ++.counter)
+                  ++.counter)
                (updating a :with 1 :unless >=
-                  :body
-                    ++.counter)
+                  ++.counter)
                (updating a :with 3 :unless >=
-                  :body
-                    ++.counter)
+                  ++.counter)
                (updating a :with 3 :unless >=
-                  :body
-                    ++.counter)))
+                  ++.counter)))
     :should be 2)
 
 (test-ac "updating doesn't evaluate unnecessarily"
