@@ -332,9 +332,6 @@
     ((assoc (car params) keyword-alist)  (get-arg var (cdr params) optionals rest arglist keyword-alist))
     ((and (member var optionals) (not (null? rest)))  #f)
     ((and (member (car params) optionals) (not (null? rest)))  (get-arg var rest optionals rest arglist keyword-alist))
-    ; destructured optional params
-    ((equal? (car params) '?)  (get-arg var (vars-in-optional-paramlist (cdr params)) optionals rest
-                                        arglist keyword-alist))
     ((null? arglist)  #f)
     ((not (pair? arglist))  (begin (err "can't destructure" params arglist)
                                    #f))
