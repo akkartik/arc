@@ -309,9 +309,7 @@
 ;     e.g. (= car.x 34) inside a function with a param b will fail to apply if x contains a :b
 ;     if the mutation happens three function calls deep, all their params are
 ;     hazards. Just avoid keywords inside lists.
-;   optional params don't work well inside destructured param lists
-;     in particular, identical param names in different destructured params
-;     will silently pick up the wrong defaults
+;   identical optional param names in different destructured params will silently pick up the wrong defaults
 (define (ac-fn params body env)
   (let* ((ra   (gensym))
          (non-keyword-args   (gensym))
