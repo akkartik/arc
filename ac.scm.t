@@ -578,6 +578,60 @@
   :valueof (each x () x)
   :should be ())
 
+(test-ac "each works when treating lists as trees"
+  :valueof (accum acc
+             (each x (tree '(1 2 (3 4)))
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               (2 (3 4))
+               2
+               ((3 4))
+               (3 4)
+               3
+               (4)
+               4
+               ()
+               ()))
+
+(test-ac "each works when treating lists as trees - 2"
+  :valueof (accum acc
+             (each x '(1 2 (3 4)) :like 'tree
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               (2 (3 4))
+               2
+               ((3 4))
+               (3 4)
+               3
+               (4)
+               4
+               ()
+               ()))
+
+(test-ac "each works when treating lists as code"
+  :valueof (accum acc
+             (each x (code '(1 2 (3 4)))
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               2
+               (3 4)
+               3
+               4))
+
+(test-ac "each works when treating lists as code - 2"
+  :valueof (accum acc
+             (each x '(1 2 (3 4)) :like 'code
+               (acc x)))
+  :should be '((1 2 (3 4))
+               1
+               2
+               (3 4)
+               3
+               4))
+
 (test-ac "serialize works on nil"
   :valueof (serialize ())
   :should be ())

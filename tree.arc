@@ -2,7 +2,7 @@
 (def tree (x)
   (annotate 'tree x))
 
-(defextend walk (seq f) (isa seq 'tree)
+(defextend walk (seq f ? like nil) (or (isa seq 'tree) (iso like 'tree))
   (let x rep.seq
     (f x)
     (unless (atom x)
