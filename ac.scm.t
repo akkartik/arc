@@ -224,7 +224,7 @@
   :should be '(2 3))
 
 (pending "get-arg understands destructured optionals"
-  :valueof (get-arg 'b () '((a ? b 34)) '(b) () '((1)) ())
+  :valueof (get-arg 'b '((a ? b 34)) '(b) () '((1)) ())
   :should be 34)
 
 
