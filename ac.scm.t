@@ -91,8 +91,20 @@
   :should be '())
 
 (test-scm "keyword-args works inside destructured lists"
-  :valueof (keyword-args '((1 :a 2)) 'a)
-  :should be '((a 2)))
+  :valueof (keyword-args '((1 :a 2)) '((a b)))
+  :should be '((a . 2)))
+
+(test-scm "keyword-args works inside destructured lists after keyword args"
+  :valueof (keyword-args '(:c 3 (1 :a 2)) '((a b) c))
+  :should be '((c . 3) (a . 2)))
+
+(test-scm "keyword-args works inside destructured lists before keyword args"
+  :valueof (keyword-args '((1 :a 2) :c 3) '(c (a b)))
+  :should be '((a . 2) (c . 3)))
+
+(test-scm "keyword-args looks for keyword args only inside corresponding destructured param"
+  :valueof (keyword-args '(:a 3) '((a b)))
+  :should be '())
 
 (test-scm "strip-keyword-args works"
   :valueof (strip-keyword-args '(1 2 :a 3 4) '(a))
@@ -117,10 +129,6 @@
 (test-scm "strip-keyword-args works with unknown keywords"
   :valueof (strip-keyword-args '(1 2 :b 3) 'a)
   :should be '(1 2 :b 3))
-
-(test-scm "strip-keyword-args works with unknown keywords - 2"
-  :valueof (strip-keyword-args '(1 2 :b) 'a)
-  :should be '(1 2 :b))
 
 (test-scm "strip-keyword-args works with unknown keywords - 2"
   :valueof (strip-keyword-args '(1 2 :b) 'a)
@@ -393,9 +401,13 @@
   :valueof ((fn ((a ? b 34)) (list a b)) '(3))
   :should be '(3 34))
 
-(test-ac "destructured keywords"
+(test-ac "destructured optional keywords"
   :valueof ((fn ((a ? b 34)) (list a b)) '(2 :a 3))
   :should be '(3 2))
+
+(test-ac "destructured keywords require destructuring"
+  :valueof ((fn ((a b)) (list a b)) '(2 3) :a 4)
+  :should be '(2 3))
 
 
 
@@ -820,24 +832,11 @@
                   ++.counter)))
   :should be 1)
 
-(arc-eval '(do
-  (disp 111)
-  (with (a 0 counter 0)
-    (disp 112)
-    (disp ;:macex1:quote
-      (updating a
-         :body
-           (++ counter)))
-    (disp a)
-  )))
-(newline)
-
 (test-ac "updating doesn't update unnecessarily"
   :valueof (ret counter 0
              (let a 0
                (updating a :with 0
-                  :body
-                    ++.counter)))
+                  ++.counter)))
   :should be 0)
 
 (test-ac "updating updates when necessary"

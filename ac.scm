@@ -309,7 +309,7 @@
 ;     e.g. (= car.x 34) inside a function with a param b will fail to apply if x contains a :b
 ;     if the mutation happens three function calls deep, all their params are
 ;     hazards. Just avoid keywords inside lists.
-;   optional params and keyword args don't work well inside destructured param lists
+;   optional params don't work well inside destructured param lists
 ;     in particular, identical param names in different destructured params
 ;     will silently pick up the wrong defaults
 (define (ac-fn params body env)
@@ -359,10 +359,10 @@
                                                        (cdr args)
                                                        (cadr args)))
                                                (keyword-args (cddr args) params))))
-    (#t   (let ((x (keyword-args (car args) params)))
-            (if (null? x)
-              (keyword-args (cdr args) params)
-              x)))))
+    ((not (pair? params))  (keyword-args (cdr args) params))
+    ((not (pair? (car params)))  (keyword-args (cdr args) params))
+    ((pair? (car params))  (append (keyword-args (car args) (car params))  ; destructured args guaranteed to be in position
+                                   (keyword-args (cdr args) (cdr params))))))
 
 (define (rest-param params)
   (cond
@@ -392,6 +392,13 @@
     ((symbol? params)  ())  ; rest
     (#t  (cons (cons (car params) (cadr params))
                (extract-optional-params (cddr params))))))
+
+(define (strip-rest params)
+  (cond
+    ((null? params) ())
+    ((not (pair? params))   ())
+    (#t   (cons (car params)
+                (strip-rest (cdr params))))))
 
 (define (vars-in-paramlist params)
   (cond
@@ -455,15 +462,18 @@
       ((keyword-arg? (car args) params)  (if (member (keyword->symbol (car args)) (rest-params params))
                                             ()
                                             (strip-keyword-args (cddr args) params)))
-      ((pair? params)   (cons (strip-keyword-args (car args) (car params))
-                              (strip-keyword-args (cdr args) params)))
-      (#t   (cons (car args)
-                  (strip-keyword-args (cdr args) params))))))
+      ((not (pair? params))  (cons (car args)
+                                   (strip-keyword-args (cdr args) params)))
+      ((not (pair? (car params)))  (cons (car args)
+                                         (strip-keyword-args (cdr args) params)))
+      (#t  (cons (strip-keyword-args (car args) (car params))
+                 (strip-keyword-args (cdr args) params))))))
 
 (define (contains-keyword-arg? args params)
   (cond
     ((null? args)  #f)
-    ((keyword-arg? args params)  #t)
+    ; todo: flatten here is a hack; correctly handle destructuring
+    ((keyword-arg? args (flatten params))  #t)
     ((not (pair? args))  #f)
     (#t  (or (contains-keyword-arg? (car args) params)
              (contains-keyword-arg? (cdr args) params)))))
@@ -472,7 +482,7 @@
   (if (symbol? sym)
     (let ((keyword (keyword->symbol sym)))
       (or (eq? keyword params)
-          (member keyword (flatten params))
+          (member keyword (strip-rest params))
           (eq? keyword (rest-param params))))
     #f))
 
@@ -703,18 +713,6 @@
   (if (null? x)
       ()
       (cdr x)))
-
-;? (define (foo . g59)
-;?   (let ((g60 (strip-keyword-args g59 '(g1162)))
-;?         (g61 (keyword-args g59 '(g1162))))
-;?     (let* ((g1162 (or (get-arg 'g1162 '(g1162) () () g60 g61)
-;?                       ())))
-;?       (unsafe-set-mcar! g1162 34))))
-;? 
-;? (define x '(1 2 3))
-;? (foo x)
-;? (display x)(newline)
-;? (exit)
 
 ; convert #f from a Scheme predicate to ()
 
