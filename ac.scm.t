@@ -223,6 +223,10 @@
   :valueof (get-arg 'c '((a ? b () . c)) () () '((1 2 3)) ())
   :should be '(2 3))
 
+(pending "get-arg understands destructured optionals"
+  :valueof (get-arg 'b () '((a ? b 34)) '(b) () '((1)) ())
+  :should be 34)
+
 
 
 (require "brackets.scm")
@@ -357,6 +361,14 @@
 (test-ac "defaults compile properly"
   :valueof (foo 3 :b 4)
   :should be 5)
+
+(pending "destructured optionals"
+  :valueof ((fn ((a ? b 34)) (list a b)) '(3))
+  :should be '(3 34))
+
+(pending "destructured keywords"
+  :valueof ((fn ((a ? b 34)) (list a b)) '(2 :a 3))
+  :should be '(3 2))
 
 
 
