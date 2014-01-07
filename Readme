@@ -1,5 +1,4 @@
-This is an incompatible but cleaner and supported fork of the Arc programming
-language.
+An experimental and incompatible fork of the Arc programming language (http://arclanguage.org)
 
 Patches welcome! If you have tools you use frequently, send them to arc@akkartik.com
 
@@ -20,8 +19,14 @@ using 'defextend'.
   http://arclanguage.org/item?id=11865, http://arclanguage.org/item?id=13790)
 
 pervasive keyword args. If a function f has params (a b c), (f :c 3 1 2) <=> (f 1 2 3), etc.
-new arglist syntax. (a b ? c c1 d d1 . e) => c and d are optional, with
-defaults c1 and d1 respectively.
+BUT this assumes no keyword syms in data:
+  arc> (iso :x :x)  # won't work because x is a param of iso
+
+new arglist syntax:
+  arc> (def foo (a ? b 34) (list a b))
+  arc> (foo 3)
+  (3 34)
+
 optional params and keyword args can't be combined with destructuring.
 
 transparent persistence using 'persisted', which can be extended for new
