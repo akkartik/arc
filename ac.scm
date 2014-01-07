@@ -336,7 +336,6 @@
     ((assoc (car params) keyword-alist)  (get-arg var original-params (cdr params) optionals rest arglist keyword-alist))
     ((and (member var optionals) (not (null? rest)))  #f)
     ((and (member (car params) optionals) (not (null? rest)))  (get-arg var original-params rest optionals rest arglist keyword-alist))
-    ((and (equal? var (car params)) (member var optionals))  (default-value var original-params))
     ((null? arglist)  #f)
     ((not (pair? arglist))  (begin (err "can't destructure" params arglist)
                                    #f))
@@ -362,10 +361,19 @@
     (#t   (rest-param (cdr params)))))
 
 (define (optional-param-alist params)
-  (partition-optional-param-alist (extract-optional-params params)))
+  (cond
+    ((null? params)  ())
+    ((symbol? params)  ())
+    ((eq? '? (car params))  (extract-optional-params (cdr params)))
+    (#t  (append (optional-param-alist (car params))
+                 (optional-param-alist (cdr params))))))
 
 (define (extract-optional-params params)
-  (strip-required (strip-rest params)))
+  (cond
+    ((null? params)  ())
+    ((symbol? params)  ())  ; rest
+    (#t  (cons (cons (car params) (cadr params))
+               (extract-optional-params (cddr params))))))
 
 (define (strip-keyword-args args params)
   (cond
@@ -382,14 +390,6 @@
     (#t   (cons (cons (car oparams)
                       (cadr oparams))
                 (partition-optional-param-alist (cddr oparams))))))
-
-(define (strip-required params)
-  (if (pair? params)
-    (let ((optargs (member '? params)))
-      (if optargs
-        (cdr optargs)
-        ()))
-    params))
 
 (define (strip-rest params)
   (cond
@@ -449,22 +449,8 @@
     (#t (cons (car params)
               (prior-optional-params param (cddr params)))))) ; skip default
 
-(define (default-value param params)
-  (cond
-    ((null? params)  ())  ; not found
-    ((equal? param params)  ())  ; rest param has no default
-    ((equal? param (car params))  ())  ; required param has no default
-    ((equal? (car params) '?)  (default-value-in-optional param (cdr params)))
-    (#t  (default-value param (cdr params)))))
-
-(define (default-value-in-optional param params)
-  (cond
-    ((null? params)  ())
-    ((not (pair? params))  ())
-    ((equal? param (car params))  (cadr params))
-    (#t  (default-value-in-optional param (cddr params)))))
-
 (define (keyword-arg? sym params)
+
   (if (symbol? sym)
     (let ((keyword (keyword->symbol sym)))
       (or (member keyword (strip-rest params))
@@ -1205,7 +1191,7 @@
 
 (define (aload1 p)
   (let ((x (read p)))
-    (display "- ")(display x)(newline)
+;?     (display "- ")(display x)(newline)
     (if (eof-object? x)
         #t
         (begin

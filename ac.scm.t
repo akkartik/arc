@@ -119,15 +119,15 @@
 (test-scm "optional-param-alist 2"
   :valueof (optional-param-alist '(a b c ? d e))
   :should be '((d . e)))
-(test-scm "optional-param-alist 3"
-  :valueof (optional-param-alist '(a b c ? d e f))
-  :should be '((d . e) (f)))
 (test-scm "optional-param-alist 4"
   :valueof (optional-param-alist '(a b c ? d e f nil))
   :should be '((d . e) (f . nil)))
 (test-scm "optional-param-alist 5"
   :valueof (optional-param-alist '(a b c ? d e f nil . g))
   :should be '((d . e) (f . nil)))
+(test-scm "optional-param-alist 6"
+  :valueof (optional-param-alist '(a (b c ? d e) ? f g . h))
+  :should be '((d . e) (f . g)))
 
 (test-scm "get-arg works for missing arg"
   :valueof (get-arg 'c () 'a () 'a 1 ())
@@ -222,10 +222,6 @@
 (test-scm "get-arg gets rest param after destructured optionals"
   :valueof (get-arg 'c () '((a ? b () . c)) () () '((1 2 3)) ())
   :should be '(2 3))
-
-(test-scm "get-arg understands destructured optionals"
-  :valueof (get-arg 'b () '((a ? b 34)) '(b) () '((1)) ())
-  :should be 34)
 
 
 
