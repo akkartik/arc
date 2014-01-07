@@ -219,10 +219,6 @@
   :valueof (get-arg 'd '(a b c e f . d) '(e f) 'd '(1 2 3 4 5 6 7) ())
   :should be '(4 5 6 7))
 
-(test-scm "get-arg gets rest param after destructured optionals"
-  :valueof (get-arg 'c '((a ? b () . c)) () () '((1 2 3)) ())
-  :should be '(2 3))
-
 
 
 (require "brackets.scm")
@@ -312,11 +308,6 @@
 (test-ac "allow optional args in order without naming"
   :valueof (foo 3 nil 2)
   :should be '(() . 2))
-
-(arc-eval '(assign foo (fn((a ? b ())) (cons a b))))
-(test-ac "destructured args can also be optional"
-  :valueof (foo '(3 4))
-  :should be '(3 . 4))
 
 (arc-eval '(assign foo (fn(a . b) b)))
 (test-ac "rest args can be named"

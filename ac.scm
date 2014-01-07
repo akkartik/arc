@@ -335,7 +335,7 @@
     ((null? arglist)  #f)
     ((not (pair? arglist))  (begin (err "can't destructure" params arglist)
                                    #f))
-    (#t   (or (get-arg var (params-without-defaults (car params)) (map car (optional-param-alist (car params))) (rest-param (car params)) (ar-xcar arglist) keyword-alist)
+    (#t   (or (get-arg var (car params) () (rest-param (car params)) (ar-xcar arglist) keyword-alist)
               (get-arg var (cdr params) optionals rest (ar-xcdr arglist) keyword-alist)))))
 
 (define (keyword-args args params)
