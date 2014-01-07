@@ -301,15 +301,6 @@
 
 
 
-; this whole approach may be a bad idea for the following reasons:
-;   we look for keyword args *after* eval'ing the arg
-;     e.g. (iso foo bar) might fail just because foo and bar happen to include
-;     :x somewhere deep inside, which is one of iso's params.
-;   destructive operations won't work with places containing keyword args
-;     e.g. (= car.x 34) inside a function with a param b will fail to apply if x contains a :b
-;     if the mutation happens three function calls deep, all their params are
-;     hazards. Just avoid keywords inside lists.
-;   identical optional param names in different destructured params will silently pick up the wrong defaults
 (define (ac-fn params body env)
   (let* ((ra   (gensym))
          (non-keyword-args   (gensym))
@@ -325,12 +316,12 @@
 (define (ac-getargs-exprs original-params non-keyword-args keyword-alist env)
   (let* ((optional-alist  (optional-param-alist original-params))
          (optional-params (map car optional-alist))
-         (params  (params-without-defaults original-params)))
+         (param-names  (params-without-defaults original-params)))
     (map (lambda (param)
             (list param
-                  `(or (get-arg ',param ',params ',optional-params ',(rest-param original-params) ,non-keyword-args ,keyword-alist)
-                       ,(ac (alref param optional-alist) (append (prior-params param params) env)))))
-         (vars-in-paramlist params))))
+                  `(or (get-arg ',param ',param-names ',optional-params ',(rest-param original-params) ,non-keyword-args ,keyword-alist)
+                       ,(ac (alref param optional-alist) (append (prior-params param param-names) env)))))
+         (vars-in-paramlist param-names))))
 
 (define (get-arg var params optionals rest arglist keyword-alist)
   (cond
@@ -357,10 +348,7 @@
                                                        (cdr args)
                                                        (cadr args)))
                                                (keyword-args (cddr args) params))))
-    ((not (pair? params))  (keyword-args (cdr args) params))
-    ((not (pair? (car params)))  (keyword-args (cdr args) params))
-    ((pair? (car params))  (append (keyword-args (car args) (car params))  ; destructured args guaranteed to be in position
-                                   (keyword-args (cdr args) (cdr params))))))
+    (#t   (keyword-args (cdr args) params))))
 
 (define (rest-param params)
   (cond
@@ -368,28 +356,35 @@
     ((not (pair? params))   params)
     (#t   (rest-param (cdr params)))))
 
-(define (rest-params params)
-  (cond
-    ((null? params)  ())
-    ((not (pair? params))  (list params))
-    ((pair? (car params))  (cons (rest-params (car params))
-                                 (rest-params (cdr params))))
-    (#t   (rest-params (cdr params)))))
-
 (define (optional-param-alist params)
-  (cond
-    ((null? params)  ())
-    ((symbol? params)  ())
-    ((eq? '? (car params))  (extract-optional-params (cdr params)))
-    (#t  (append (optional-param-alist (car params))
-                 (optional-param-alist (cdr params))))))
+  (partition-optional-param-alist (extract-optional-params params)))
 
 (define (extract-optional-params params)
+  (strip-required (strip-rest params)))
+
+(define (strip-keyword-args args params)
   (cond
-    ((null? params)  ())
-    ((symbol? params)  ())  ; rest
-    (#t  (cons (cons (car params) (cadr params))
-               (extract-optional-params (cddr params))))))
+    ((null? args)  ())
+    ((keyword-arg? (car args) params)  (if (equal? (keyword->symbol (car args)) (rest-param params))
+                                          ()
+                                          (strip-keyword-args (cddr args) params)))
+    (#t   (cons (car args) (strip-keyword-args (cdr args) params)))))
+
+(define (partition-optional-param-alist oparams)
+  (cond
+    ((not (pair? oparams))  ())
+    ((not (pair? (cdr oparams)))  (list oparams))
+    (#t   (cons (cons (car oparams)
+                      (cadr oparams))
+                (partition-optional-param-alist (cddr oparams))))))
+
+(define (strip-required params)
+  (if (pair? params)
+    (let ((optargs (member '? params)))
+      (if optargs
+        (cdr optargs)
+        ()))
+    params))
 
 (define (strip-rest params)
   (cond
@@ -449,50 +444,10 @@
     (#t (cons (car params)
               (prior-optional-params param (cddr params)))))) ; skip default
 
-(define (strip-keyword-args-shallow args params)
-  ; replacing args will cause mutations to fail. do so over as restricted an
-  ; area as possible.
-  (if (not (contains-keyword-arg? args params))
-    args
-    (cond
-      ((null? args)  ())
-      ((not (pair? args))  args)
-      ((keyword-arg? (car args) (rest-param params))  ())
-      ((keyword-arg? (car args) (strip-rest params))  (strip-keyword-args-shallow (cddr args) params))
-      (#t  (cons (car args)
-                 (strip-keyword-args-shallow (cdr args) params))))))
-
-(define (strip-keyword-args args params)
-  ; replacing args will cause mutations to fail. do so over as restricted an
-  ; area as possible.
-  (if (not (contains-keyword-arg? args params))
-    args
-    (cond
-      ((null? args)  ())
-      ((not (pair? args))  args)
-      ((keyword-arg? (car args) params)  (if (member (keyword->symbol (car args)) (rest-params params))
-                                            ()
-                                            (strip-keyword-args (cddr args) params)))
-      ((not (pair? params))  (cons (car args)
-                                   (strip-keyword-args (cdr args) params)))
-      ((not (pair? (car params)))  (cons (car args)
-                                         (strip-keyword-args (cdr args) params)))
-      (#t  (cons (strip-keyword-args (car args) (car params))
-                 (strip-keyword-args (cdr args) params))))))
-
-(define (contains-keyword-arg? args params)
-  (cond
-    ((null? args)  #f)
-    ((keyword-arg? args params)  #t)
-    ((not (pair? args))  #f)
-    ((keyword-arg? (car args) params)  #t)
-    (#t  (contains-keyword-arg? (cdr args) params))))
-
 (define (keyword-arg? sym params)
   (if (symbol? sym)
     (let ((keyword (keyword->symbol sym)))
-      (or (eq? keyword params)
-          (member keyword (strip-rest params))
+      (or (member keyword (strip-rest params))
           (eq? keyword (rest-param params))))
     #f))
 
@@ -508,14 +463,6 @@
     (and (not (equal? s ""))
          (eq? #\: (string-ref s 0))
          (string->symbol (substring s 1)))))
-
-(define (flatten x)
-  (define (inner x acc)
-    (cond ((null? x)  acc)
-          ((not (pair? x))  (cons x acc))
-          (#t  (inner (car x)
-                      (inner (cdr x) acc)))))
-  (inner x ()))
 
 (define (alref key alist)
   (let ((foo (assoc key alist)))

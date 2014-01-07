@@ -70,18 +70,6 @@
   :valueof (vars-in-paramlist '(a ? b 2 c 3 . d))
   :should be '(a b c d))
 
-(test-scm "contains-keyword-arg? - 1"
-  :valueof (contains-keyword-arg? '(1 2 3) '(a b))
-  :should be #f)
-
-(test-scm "contains-keyword-arg? - 2"
-  :valueof (contains-keyword-arg? '(1 :a 2 3) '(a b))
-  :should be #t)
-
-(test-scm "contains-keyword-arg? - 3"
-  :valueof (contains-keyword-arg? '(1 (:a 2) 3) '(a b))
-  :should be #f)
-
 (test-scm "keyword-args works"
   :valueof (keyword-args '(1 2 :a 3) '(a))
   :should be '((a . 3)))
@@ -102,62 +90,6 @@
   :valueof (keyword-args '(1 2 :b) 'a)
   :should be '())
 
-(test-scm "keyword-args works inside destructured lists"
-  :valueof (keyword-args '((1 :a 2)) '((a b)))
-  :should be '((a . 2)))
-
-(test-scm "keyword-args works inside destructured lists after keyword args"
-  :valueof (keyword-args '(:c 3 (1 :a 2)) '((a b) c))
-  :should be '((c . 3) (a . 2)))
-
-(test-scm "keyword-args works inside destructured lists before keyword args"
-  :valueof (keyword-args '((1 :a 2) :c 3) '(c (a b)))
-  :should be '((a . 2) (c . 3)))
-
-(test-scm "keyword-args looks for keyword args only inside corresponding destructured param"
-  :valueof (keyword-args '(:a 3) '((a b)))
-  :should be '())
-
-(test-scm "strip-keyword-args-shallow works"
-  :valueof (strip-keyword-args-shallow '(1 2 :a 3 4) '(a))
-  :should be '(1 2 4))
-
-(test-scm "strip-keyword-args-shallow works on vararg args"
-  :valueof (strip-keyword-args-shallow '(1 2 :a 3 4) 'a)
-  :should be '(1 2))
-
-(test-scm "strip-keyword-args-shallow works on rest args"
-  :valueof (strip-keyword-args-shallow '(1 2 :b 3 4) '(a . b))
-  :should be '(1 2))
-
-(test-scm "strip-keyword-args-shallow skips destructured args"
-  :valueof (strip-keyword-args-shallow '((1 2 :b 3 4)) '((a b)))
-  :should be '((1 2 :b 3 4)))
-
-(test-scm "strip-keyword-args-shallow skips unknown keywords"
-  :valueof (strip-keyword-args-shallow '(1 2 :b 3) 'a)
-  :should be '(1 2 :b 3))
-
-(test-scm "strip-keyword-args-shallow skips unknown keywords - 2"
-  :valueof (strip-keyword-args-shallow '(1 2 :b) 'a)
-  :should be '(1 2 :b))
-
-(let ((args '(1 2 3)))
-  ; hacky attempt at not breaking mutating functions; see ac-fn
-  (test-scm "strip-keyword-args-shallow returns unchanged arg list when keywords are absent"
-    :valueof (strip-keyword-args-shallow args 'a)
-    :should eq? args))
-
-(let ((args '((1 :a 2))))
-  (test-scm "strip-keyword-args-shallow returns unchanged arg list when keywords are absent"
-    :valueof (strip-keyword-args-shallow args '(a b))
-    :should eq? args))
-
-(let ((args '(1 :c 2)))
-  (test-scm "strip-keyword-args-shallow returns unchanged arg list when keywords are absent - 2"
-    :valueof (strip-keyword-args-shallow args '(a (b c)))
-    :should eq? args))
-
 (test-scm "strip-keyword-args works"
   :valueof (strip-keyword-args '(1 2 :a 3 4) '(a))
   :should be '(1 2 4))
@@ -170,37 +102,13 @@
   :valueof (strip-keyword-args '(1 2 :b 3 4) '(a . b))
   :should be '(1 2))
 
-(test-scm "strip-keyword-args works on destructured args"
-  :valueof (strip-keyword-args '((1 2 :b 3 4)) '((a b)))
-  :should be '((1 2 4)))
-
-(test-scm "strip-keyword-args works on destructured rest args"
-  :valueof (strip-keyword-args '((1 2 :b 3 4)) '((a . b)))
-  :should be '((1 2)))
-
-(test-scm "strip-keyword-args skips unknown keywords"
+(test-scm "strip-keyword-args works with unknown keywords"
   :valueof (strip-keyword-args '(1 2 :b 3) 'a)
   :should be '(1 2 :b 3))
 
-(test-scm "strip-keyword-args skips unknown keywords - 2"
+(test-scm "strip-keyword-args works with unknown keywords - 2"
   :valueof (strip-keyword-args '(1 2 :b) 'a)
   :should be '(1 2 :b))
-
-(let ((args '(1 2 3)))
-  ; hacky attempt at not breaking mutating functions; see ac-fn
-  (test-scm "strip-keyword-args returns unchanged arg list when keywords are absent"
-    :valueof (strip-keyword-args args 'a)
-    :should eq? args))
-
-(let ((args '((1 :a 2))))
-  (test-scm "strip-keyword-args returns unchanged arg list when keywords are absent"
-    :valueof (strip-keyword-args args '(a b))
-    :should eq? args))
-
-(let ((args '(1 :c 2)))
-  (test-scm "strip-keyword-args returns unchanged arg list when keywords are absent - 2"
-    :valueof (strip-keyword-args args '(a (b c)))
-    :should eq? args))
 
 (test-scm "optional-param-alist works - 1"
   :valueof (optional-param-alist 'a)
@@ -211,15 +119,15 @@
 (test-scm "optional-param-alist 2"
   :valueof (optional-param-alist '(a b c ? d e))
   :should be '((d . e)))
+(test-scm "optional-param-alist 3"
+  :valueof (optional-param-alist '(a b c ? d e f))
+  :should be '((d . e) (f)))
 (test-scm "optional-param-alist 4"
   :valueof (optional-param-alist '(a b c ? d e f nil))
   :should be '((d . e) (f . nil)))
 (test-scm "optional-param-alist 5"
   :valueof (optional-param-alist '(a b c ? d e f nil . g))
   :should be '((d . e) (f . nil)))
-(test-scm "optional-param-alist 6"
-  :valueof (optional-param-alist '(a (b c ? d e) ? f g . h))
-  :should be '((d . e) (f . g)))
 
 (test-scm "get-arg works for missing arg"
   :valueof (get-arg 'c 'a () 'a 1 ())
@@ -309,10 +217,6 @@
 
 (test-scm "get-arg gets rest param after optionals"
   :valueof (get-arg 'd '(a b c e f . d) '(e f) 'd '(1 2 3 4 5 6 7) ())
-  :should be '(4 5 6 7))
-
-(test-scm "get-arg gets rest param after optionals from keyword arg"
-  :valueof (get-arg 'd '(a b c e f . d) '(e f) 'd '(1 2 3) '((d 4 5 6 7)))
   :should be '(4 5 6 7))
 
 (test-scm "get-arg gets rest param after destructured optionals"
@@ -437,11 +341,6 @@
   :valueof (foo 23 24 25)
   :should be '(() 3 24 25))
 
-(arc-eval '(assign foo (fn(a ? b () c 3 . body) (cons b (cons c body)))))
-(test-ac "call with unnamed optional args can take handle rest keyword arg"
-  :valueof (foo :body 23 24 25)
-  :should be '(() 3 23 24 25))
-
 (test-ac "call with some named optional and rest args"
   :valueof (foo 3 :c 4 :body 4 5)
   :should be '(() 4 4 5))
@@ -458,18 +357,6 @@
 (test-ac "defaults compile properly"
   :valueof (foo 3 :b 4)
   :should be 5)
-
-(test-ac "destructured optionals"
-  :valueof ((fn ((a ? b 34)) (list a b)) '(3))
-  :should be '(3 34))
-
-(test-ac "destructured optional keywords"
-  :valueof ((fn ((a ? b 34)) (list a b)) '(2 :a 3))
-  :should be '(3 2))
-
-(test-ac "destructured keywords require destructuring"
-  :valueof ((fn ((a b)) (list a b)) '(2 3) :a 4)
-  :should be '(2 3))
 
 
 
@@ -692,60 +579,6 @@
   :valueof (each x () x)
   :should be ())
 
-(test-ac "each works when treating lists as trees"
-  :valueof (accum acc
-             (each x (tree '(1 2 (3 4)))
-               (acc x)))
-  :should be '((1 2 (3 4))
-               1
-               (2 (3 4))
-               2
-               ((3 4))
-               (3 4)
-               3
-               (4)
-               4
-               ()
-               ()))
-
-(test-ac "each works when treating lists as trees - 2"
-  :valueof (accum acc
-             (each x '(1 2 (3 4)) :like 'tree
-               (acc x)))
-  :should be '((1 2 (3 4))
-               1
-               (2 (3 4))
-               2
-               ((3 4))
-               (3 4)
-               3
-               (4)
-               4
-               ()
-               ()))
-
-(test-ac "each works when treating lists as code"
-  :valueof (accum acc
-             (each x (code '(1 2 (3 4)))
-               (acc x)))
-  :should be '((1 2 (3 4))
-               1
-               2
-               (3 4)
-               3
-               4))
-
-(test-ac "each works when treating lists as code - 2"
-  :valueof (accum acc
-             (each x '(1 2 (3 4)) :like 'code
-               (acc x)))
-  :should be '((1 2 (3 4))
-               1
-               2
-               (3 4)
-               3
-               4))
-
 (test-ac "serialize works on nil"
   :valueof (serialize ())
   :should be ())
@@ -898,27 +731,33 @@
   :valueof (ret counter 0
              (let a 0
                (updating a :with 0
-                  ++.counter)))
+                  :body
+                    ++.counter)))
   :should be 0)
 
 (test-ac "updating updates when necessary"
   :valueof (ret counter 0
              (let a 0
                (updating a 1
-                  ++.counter)))
+                  :body
+                    ++.counter)))
   :should be 1)
 
 (test-ac "updating works with condition"
   :valueof (ret counter 0
              (let a 0
                (updating a :with 1 :unless >=
-                  ++.counter)
+                  :body
+                    ++.counter)
                (updating a :with 1 :unless >=
-                  ++.counter)
+                  :body
+                    ++.counter)
                (updating a :with 3 :unless >=
-                  ++.counter)
+                  :body
+                    ++.counter)
                (updating a :with 3 :unless >=
-                  ++.counter)))
+                  :body
+                    ++.counter)))
     :should be 2)
 
 (test-ac "updating doesn't evaluate unnecessarily"
