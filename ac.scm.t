@@ -349,6 +349,14 @@
   :valueof (foo 3 :b 4)
   :should be 5)
 
+(test-ac "only destructured param can contain optionals"
+  :valueof ((fn ((a ? b 34)) (list a b)) '(3))
+  :should be '(3 34))
+
+(test-ac "only destructured param can pick up keyword args"
+  :valueof ((fn ((a b)) (list a b)) '(2 :a 3))
+  :should be '(3 2))
+
 
 
 (arc-eval '((fn() (mac foo () 34) (mac bar () (foo)))))

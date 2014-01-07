@@ -302,6 +302,28 @@
 
 
 (define (ac-fn params body env)
+  (if (and (pair? params)
+           (null? (cdr params))
+           (pair? (car params)))
+     (ac-destructured-fn params body env)
+     (ac-nondestructured-fn params body env)))
+
+ ; if a single destructured param, look for optionals and keywords inside it
+(define (ac-destructured-fn params body env)
+  (set! params (car params))
+  (let* ((ra   (gensym))
+         (non-keyword-args   (gensym))
+         (keyword-alist  (gensym))
+         (z  (ac-getargs-exprs params non-keyword-args keyword-alist env)))
+    `(lambda ,ra
+       (set! ,ra (car ,ra))
+       (let ((,non-keyword-args  (strip-keyword-args ,ra ',params))
+             (,keyword-alist   (keyword-args ,ra ',params)))
+         (let* ,z
+           ,@(ac-body* body (append '(,keyword-alist ,non-keyword-args)
+                                    (ac-complex-getargs z) env)))))))
+
+(define (ac-nondestructured-fn params body env)
   (let* ((ra   (gensym))
          (non-keyword-args   (gensym))
          (keyword-alist  (gensym))

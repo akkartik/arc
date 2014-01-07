@@ -22,6 +22,7 @@ using 'defextend'.
 pervasive keyword args. If a function f has params (a b c), (f :c 3 1 2) <=> (f 1 2 3), etc.
 new arglist syntax. (a b ? c c1 d d1 . e) => c and d are optional, with
 defaults c1 and d1 respectively.
+optional params and keyword args can't be combined with destructuring.
 
 transparent persistence using 'persisted', which can be extended for new
 datatypes by supporting the generics 'serialize' and 'unserialize'.
