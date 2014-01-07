@@ -305,10 +305,7 @@
   (let* ((ra   (gensym))
          (non-keyword-args   (gensym))
          (keyword-alist  (gensym))
-         (optional-alist  (optional-param-alist params))
-         (optional-params (map car optional-alist))
-         (params-without-?  (params-without-defaults params))
-         (z  (ac-getargs-exprs params-without-? optional-params non-keyword-args keyword-alist optional-alist env)))
+         (z  (ac-getargs-exprs params non-keyword-args keyword-alist env)))
     `(lambda ,ra
        (let ((,non-keyword-args  (strip-keyword-args ,ra ',params))
              (,keyword-alist   (keyword-args ,ra ',params)))
@@ -316,12 +313,15 @@
            ,@(ac-body* body (append '(,keyword-alist ,non-keyword-args)
                                     (ac-complex-getargs z) env)))))))
 
-(define (ac-getargs-exprs params optional-params non-keyword-args keyword-alist optional-alist env)
-  (map (lambda (param)
-          (list param
-                `(or (get-arg ',param ',params ',optional-params ',(rest-param params) ,non-keyword-args ,keyword-alist)
-                     ,(ac (alref param optional-alist) (append (prior-params param params) env)))))
-       (vars-in-paramlist params)))
+(define (ac-getargs-exprs original-params non-keyword-args keyword-alist env)
+  (let* ((optional-alist  (optional-param-alist original-params))
+         (optional-params (map car optional-alist))
+         (param-names  (params-without-defaults original-params)))
+    (map (lambda (param)
+            (list param
+                  `(or (get-arg ',param ',param-names ',optional-params ',(rest-param original-params) ,non-keyword-args ,keyword-alist)
+                       ,(ac (alref param optional-alist) (append (prior-params param param-names) env)))))
+         (vars-in-paramlist param-names))))
 
 (define (get-arg var params optionals rest arglist keyword-alist)
   (cond
