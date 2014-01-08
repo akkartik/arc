@@ -1,7 +1,5 @@
 An experimental and incompatible fork of the Arc programming language (http://arclanguage.org)
 
-Patches welcome! If you have tools you use frequently, send them to arc@akkartik.com
-
 *Important*: If you are running a HN-like site, using this fork will mess up
 your data. Talk to me first, and be sure to make a backup.
 
